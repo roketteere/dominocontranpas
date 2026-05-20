@@ -8,6 +8,37 @@ Don't delete old entries; flip the status above.
 
 ## 2026-05-20 — Project genesis
 
+### `[shipped]` Phase 2: solo-vs-AI playable end-to-end
+React 19 + Vite 8 + Tailwind 4 PWA wired on top of the Phase 1 engine.
+Components in `apps/web/src/ui/`: `Tile`, `Hand` (dnd-kit draggable),
+`Chain` (with PR-style perpendicular doubles), `Board`, `OpponentRow`
+(face-down tile backs + tile count + immunity flag), `ScoreBar`,
+`MainMenu`, `RoundEnd`, `MatchEnd`. Heuristic AI in
+`apps/web/src/ai/heuristicAi.ts`: prefers high-pip plays, saves doubles,
+left-side tiebreak. Zustand store in `apps/web/src/state/gameStore.ts`
+orchestrates the loop (apply move → resolve steal → check round end →
+schedule next AI turn). Setup module `apps/web/src/engine/setup.ts`
+adds Fisher-Yates shuffle, dealRound, defaultGameOptions,
+fourPartnerSeats, plus a mulberry32 seeded RNG for tests and a crypto
+RNG for prod.
+
+Smoke-tested via playwright: menu loads, "Solo vs AI" launches a 4-seat
+match (1 human + 3 AI), opener auto-plays, steal phase runs, board
+renders with chain + hand + opponents + score, tile pips display
+correctly (fixed mid-build when a percent-based dot height collapsed
+to 0px inside a nested flex column).
+
+Open follow-ups before Phase 3 multiplayer:
+- No visual animation for steal events (the stolen tile just shows up
+  in the human hand silently). Framer Motion fly-in would help.
+- AI doesn't track which numbers opponents have passed on — currently
+  a pure pip-priority heuristic.
+- No tests yet for `ai/`, `state/`, `ui/`, `engine/setup.ts`. Engine
+  is still at 99%+; integration coverage is open.
+- Hand isn't sorted; tiles appear in deal order.
+- Mobile layout designed mobile-first but not yet validated on a real
+  phone.
+
 ### `[shipped]` Phase 1: pure rule engine + Vitest suite
 First milestone landed in commits after the initial scaffold. Engine
 modules in `apps/web/src/engine/`:

@@ -35,7 +35,10 @@ game.
 # Install workspace deps
 pnpm install
 
-# Engine tests (Phase 1)
+# Dev server (Vite — picks a free port, default 5173)
+pnpm --filter web dev
+
+# Engine tests
 pnpm --filter web test
 pnpm --filter web test:watch       # watch mode
 
@@ -45,20 +48,26 @@ pnpm --filter web exec vitest run --coverage
 # TypeScript typecheck (no emit)
 pnpm --filter web typecheck
 
-# Phase 2+ (not yet scaffolded):
-# pnpm --filter web dev             # vite dev server
+# Production build
+pnpm --filter web build
+pnpm --filter web preview          # serve the built bundle
+
+# Phase 3+ (not yet scaffolded):
 # pnpm --filter convex dev          # convex backend
 ```
 
 ## Status
 
-Pre-alpha. **Phase 1 done:** pure rule engine + Vitest suite (48/48
-passing, 97% statement coverage). Engine lives in
-`apps/web/src/engine/` as React-free, Convex-free, IO-free TypeScript
-so the same code can run client-side (optimistic UI, offline solo) and
-server-side (Convex move validation, source of truth).
+Pre-alpha. **Phase 1 + 2 done.**
 
-Next up: Phase 2 — solo-vs-AI UI on top of the engine.
+- **Phase 1 (engine):** pure rule engine in `apps/web/src/engine/`.
+  58/58 Vitest tests, ~99% statement / ~92% branch coverage.
+- **Phase 2 (solo-vs-AI UI):** React 19 + Vite 8 + Tailwind 4. Drag-
+  and-drop tile play via dnd-kit, heuristic AI for 3 opponents,
+  Zustand store orchestrating the move → steal → round-end loop.
+  Smoke-tested with Playwright end-to-end.
+
+Next up: Phase 3 — Convex backend + online multiplayer.
 
 See `IDEAS.md` for what's planned and what's parked. See the project's
 plan at
