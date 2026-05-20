@@ -52,4 +52,4 @@ android/app/build/
 ios/build/
 
 # Misc
-.claude.local/
+.claude/settings.local.json
