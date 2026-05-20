@@ -8,6 +8,28 @@ Don't delete old entries; flip the status above.
 
 ## 2026-05-20 — Project genesis
 
+### `[shipped]` Phase 2 polish: tile rotation, visual matching, bilingual UI
+Three iterations on top of Phase 2 in response to Joel's playtest feedback
+(2026-05-20):
+- **Visual matching bug:** placed tiles weren't visually showing matching
+  pips touching. `PlacedTileView` had been re-normalizing through
+  `tiles.makeTile()` (which sorts pips), so when the engine placed a tile
+  with the higher pip on the visual left, the render still showed the
+  lower pip on the left. Fix: added `flipped` prop to `Tile`, derived
+  in `PlacedTileView` from whether `placed.leftPip === tile[0]`.
+- **180° rotation:** per-tile flip state in `Board.tsx`, toggled via R
+  key (window keydown, skips input/textarea) or the "Girar (R)" /
+  "Rotate (R)" button next to the hand. Required adding dnd-kit sensor
+  activation constraints (Pointer: 8px distance; Touch: 180ms delay) so
+  taps don't fire accidental drags. Removed auto-play-on-tap so users
+  can select a single-legal-side tile to flip it for visual taste.
+- **Bilingual ES (PR) + EN (US):** new `src/i18n/` module with a string
+  table, `useT()` hook, and `format(template, vars)` placeholder helper.
+  `gameStore` gained `lang` + `setLang` with localStorage persistence
+  (default from `navigator.language`). MainMenu got a "How to play /
+  Cómo se juega" help section covering all six rule concepts.
+- Commit: `9e308cf`.
+
 ### `[shipped]` Phase 2: solo-vs-AI playable end-to-end
 React 19 + Vite 8 + Tailwind 4 PWA wired on top of the Phase 1 engine.
 Components in `apps/web/src/ui/`: `Tile`, `Hand` (dnd-kit draggable),
