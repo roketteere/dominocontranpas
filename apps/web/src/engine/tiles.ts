@@ -57,6 +57,7 @@ export function tileFromString(s: string): Tile {
     }
     const aStr = parts[0];
     const bStr = parts[1];
+    /* c8 ignore next 3 -- noUncheckedIndexedAccess requires the guard; length===2 means both defined */
     if (aStr === undefined || bStr === undefined) {
         throw new Error("Malformed tile: " + s);
     }

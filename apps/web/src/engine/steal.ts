@@ -28,6 +28,7 @@ export function shouldSteal(state: GameState): StealDecision {
     const targetPlayerId = targetSeat.playerId;
 
     const sourceHand: Hand | undefined = state.hands[sourcePlayerId as unknown as string];
+    /* c8 ignore next -- `?? 0` branch only fires if lastActor has no hand entry, impossible in a valid state */
     const sourceLen = sourceHand?.length ?? 0;
 
     if (sourceLen === 0) {
@@ -66,6 +67,7 @@ export function resolveStealPhase(state: GameState, rng: Rng): GameState {
 
     const sourceHand = state.hands[decision.sourcePlayerId as unknown as string];
     const targetHand = state.hands[decision.targetPlayerId as unknown as string];
+    /* c8 ignore next 2 -- shouldSteal already returned proceed=false if source has < 2 tiles */
     if (sourceHand === undefined || sourceHand.length === 0) return state;
     if (targetHand === undefined) return state;
 
@@ -73,6 +75,7 @@ export function resolveStealPhase(state: GameState, rng: Rng): GameState {
     const raw = rng();
     const idx = Math.min(Math.floor(raw * sourceHand.length), sourceHand.length - 1);
     const stolenTile: Tile | undefined = sourceHand[idx];
+    /* c8 ignore next -- noUncheckedIndexedAccess requires the guard; idx is always in range */
     if (stolenTile === undefined) return state;
 
     const newSourceHand: Hand = [

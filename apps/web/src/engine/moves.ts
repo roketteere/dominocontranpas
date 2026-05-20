@@ -167,6 +167,7 @@ export function applyMove(state: GameState, move: Move): GameState {
 
     // Play move.
     const hand = getHand(state, move.playerId);
+    /* c8 ignore next 3 -- validMoves filters out players without hands; this is a TS-required guard */
     if (hand === undefined) {
         throw new Error("Player has no hand: " + String(move.playerId));
     }

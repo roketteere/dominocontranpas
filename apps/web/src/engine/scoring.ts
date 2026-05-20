@@ -65,6 +65,7 @@ function teamOf(state: GameState, playerId: PlayerId): TeamId | null {
     for (const seat of state.seats) {
         if (seat.playerId === playerId) return seat.team;
     }
+    /* c8 ignore next -- only called with a playerId we already found via findEmptyHandPlayer (iterates seats) */
     return null;
 }
 

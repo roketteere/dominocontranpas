@@ -181,6 +181,30 @@ describe("tiles", () => {
 // ───────── moves ─────────
 
 describe("moves.validMoves", () => {
+    it("returns [] when phase is not in_round", () => {
+        const state = fourPlayerState({
+            phase: "round_end",
+            hands: { p0: [makeTile(6, 6)], p1: [], p2: [], p3: [] },
+        });
+        expect(validMoves(state, pid("p0"))).toEqual([]);
+    });
+
+    it("returns [] when turnIndex is out of bounds", () => {
+        const state = fourPlayerState({
+            turnIndex: 99,
+            hands: { p0: [makeTile(6, 6)], p1: [], p2: [], p3: [] },
+        });
+        expect(validMoves(state, pid("p0"))).toEqual([]);
+    });
+
+    it("returns [] when player has no hand entry", () => {
+        // p0 is the current seat but their hand entry is missing (degenerate state).
+        const state = fourPlayerState({
+            hands: { p1: [], p2: [], p3: [] },
+        });
+        expect(validMoves(state, pid("p0"))).toEqual([]);
+    });
+
     it("returns [] when not the players turn", () => {
         const state = fourPlayerState({
             hands: { p0: [makeTile(6, 6)], p1: [], p2: [], p3: [] },
@@ -314,6 +338,68 @@ describe("moves.applyMove", () => {
         expect(next.turnIndex).toBe(1);
     });
 
+    it("placing on left when incoming[0] matches leftEnd exposes incoming[1]", () => {
+        const chain: Chain = {
+            tiles: [
+                {
+                    tile: makeTile(1, 4),
+                    leftPip: 1,
+                    rightPip: 4,
+                    playedBy: pid("p0"),
+                    turnNumber: 0,
+                },
+            ],
+            leftEnd: 1,
+            rightEnd: 4,
+        };
+        const state = fourPlayerState({
+            chain,
+            turnIndex: 1,
+            // [1, 3] is held normalized. incoming[0]=1, leftEnd=1 → matching=1, exposed=3.
+            hands: { p0: [], p1: [makeTile(1, 3)], p2: [], p3: [] },
+        });
+        const play: PlayMove = {
+            kind: "play",
+            playerId: pid("p1"),
+            tile: makeTile(1, 3),
+            side: "left",
+        };
+        const next = applyMove(state, play);
+        expect(next.chain.leftEnd).toBe(3);
+        expect(next.chain.rightEnd).toBe(4);
+    });
+
+    it("placing on right when incoming[0] matches rightEnd exposes incoming[1]", () => {
+        const chain: Chain = {
+            tiles: [
+                {
+                    tile: makeTile(1, 4),
+                    leftPip: 1,
+                    rightPip: 4,
+                    playedBy: pid("p0"),
+                    turnNumber: 0,
+                },
+            ],
+            leftEnd: 1,
+            rightEnd: 4,
+        };
+        const state = fourPlayerState({
+            chain,
+            turnIndex: 1,
+            // [4, 6] normalized. incoming[0]=4, rightEnd=4 → matching=4, exposed=6.
+            hands: { p0: [], p1: [makeTile(4, 6)], p2: [], p3: [] },
+        });
+        const play: PlayMove = {
+            kind: "play",
+            playerId: pid("p1"),
+            tile: makeTile(4, 6),
+            side: "right",
+        };
+        const next = applyMove(state, play);
+        expect(next.chain.leftEnd).toBe(1);
+        expect(next.chain.rightEnd).toBe(6);
+    });
+
     it("placing on left exposes the non-matching pip", () => {
         const chain: Chain = {
             tiles: [
@@ -373,6 +459,37 @@ describe("moves.applyMove", () => {
         const next = applyMove(state, play);
         expect(next.chain.leftEnd).toBe(3);
         expect(next.chain.rightEnd).toBe(2);
+    });
+
+    it("throws when caller submits Pass but a Play is required", () => {
+        const state = fourPlayerState({
+            hands: { p0: [makeTile(6, 6)], p1: [], p2: [], p3: [] },
+        });
+        const bad: PassMove = { kind: "pass", playerId: pid("p0") };
+        expect(() => applyMove(state, bad)).toThrow();
+    });
+
+    it("throws when caller submits Play but a Pass is required", () => {
+        const chain: Chain = {
+            tiles: [
+                { tile: makeTile(3, 5), leftPip: 3, rightPip: 5, playedBy: pid("p0"), turnNumber: 0 },
+            ],
+            leftEnd: 3,
+            rightEnd: 5,
+        };
+        const state = fourPlayerState({
+            chain,
+            turnIndex: 1,
+            // p1 holds [0,1] which matches neither end → forced pass
+            hands: { p0: [], p1: [makeTile(0, 1)], p2: [], p3: [] },
+        });
+        const bad: PlayMove = {
+            kind: "play",
+            playerId: pid("p1"),
+            tile: makeTile(0, 1),
+            side: "left",
+        };
+        expect(() => applyMove(state, bad)).toThrow();
     });
 
     it("throws on illegal move (wrong tile)", () => {
@@ -563,6 +680,19 @@ describe("scoring", () => {
         expect(out.phase).toBe("match_end");
     });
 
+    it("applyRoundOutcome credits team B without disturbing team A", () => {
+        const state = fourPlayerState({ scores: { A: 75, B: 90 } });
+        const out = applyRoundOutcome(state, {
+            kind: "tranca",
+            winningTeam: "B",
+            points: 20,
+            remainingPipsByPlayer: {},
+        });
+        expect(out.scores.A).toBe(75);
+        expect(out.scores.B).toBe(110);
+        expect(out.phase).toBe("round_end");
+    });
+
     it("isMatchOver true when phase is match_end", () => {
         const state = fourPlayerState({ phase: "match_end" });
         expect(isMatchOver(state)).toBe(true);
@@ -571,6 +701,16 @@ describe("scoring", () => {
     it("isMatchOver true when a team reaches the target", () => {
         const state = fourPlayerState({ scores: { A: 200, B: 50 } });
         expect(isMatchOver(state)).toBe(true);
+    });
+
+    it("isMatchOver true when team B reaches the target", () => {
+        const state = fourPlayerState({ scores: { A: 50, B: 200 } });
+        expect(isMatchOver(state)).toBe(true);
+    });
+
+    it("isMatchOver false when neither team has reached target and phase != match_end", () => {
+        const state = fourPlayerState({ scores: { A: 150, B: 150 } });
+        expect(isMatchOver(state)).toBe(false);
     });
 
     it("isZapato returns losing team when they finished with 0", () => {
