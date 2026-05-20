@@ -72,6 +72,8 @@ export type TileProps = {
     size?: "sm" | "md" | "lg";
     selected?: boolean;
     faceDown?: boolean;
+    /** When true, the tile's two pip faces are rendered in reversed visual order. */
+    flipped?: boolean;
     className?: string;
 };
 
@@ -99,6 +101,7 @@ export function Tile({
     size = "md",
     selected = false,
     faceDown = false,
+    flipped = false,
     className = "",
 }: TileProps) {
     const sizeCls = orientation === "horizontal" ? SIZE_CLASSES[size] : SIZE_VERTICAL[size];
@@ -116,16 +119,20 @@ export function Tile({
     }
     const dotPx = DOT_PX[size];
     const dividerClass = orientation === "horizontal" ? "h-px w-full" : "w-px h-full";
+    // Default render: tile[0] on the visual left/top, tile[1] on the visual right/bottom.
+    // When flipped, swap the two pip faces so the matching pip can touch the chain end.
+    const firstPip = flipped ? tile[1] : tile[0];
+    const secondPip = flipped ? tile[0] : tile[1];
     return (
         <div
             className={`${sizeCls} ${ringCls} ${className} flex ${orientation === "horizontal" ? "flex-row" : "flex-col"} rounded-md border border-pr-coal-soft bg-pr-ivory shadow-md overflow-hidden`}
         >
             <div className="flex flex-1 items-center justify-center bg-pr-ivory">
-                <PipFace value={tile[0]} dotSize={dotPx} />
+                <PipFace value={firstPip} dotSize={dotPx} />
             </div>
             <div className={`${dividerClass} bg-pr-coal-soft`} />
             <div className="flex flex-1 items-center justify-center bg-pr-ivory">
-                <PipFace value={tile[1]} dotSize={dotPx} />
+                <PipFace value={secondPip} dotSize={dotPx} />
             </div>
         </div>
     );

@@ -1,21 +1,63 @@
-import { useMemo, useState } from "react";
-import { DndContext, type DragEndEvent } from "@dnd-kit/core";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+    DndContext,
+    PointerSensor,
+    TouchSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+} from "@dnd-kit/core";
 import { useGameStore } from "../state/gameStore.js";
 import type { PlayMove, Side, Tile as TileT } from "../engine/types.js";
 import { validMoves } from "../engine/moves.js";
-import { equals, tileFromString } from "../engine/tiles.js";
+import { equals, tileFromString, tileToString } from "../engine/tiles.js";
 import { Chain } from "./Chain.js";
 import { Hand } from "./Hand.js";
 import { OpponentRow } from "./OpponentRow.js";
 import { ScoreBar } from "./ScoreBar.js";
+import { useT } from "../i18n/index.js";
 
 export function Board() {
     const state = useGameStore((s) => s.state);
     const humanPlayerId = useGameStore((s) => s.humanPlayerId);
     const submitHumanMove = useGameStore((s) => s.submitHumanMove);
     const aiThinking = useGameStore((s) => s.aiThinking);
+    const t = useT();
 
     const [selectedTile, setSelectedTile] = useState<TileT | null>(null);
+    const [flippedTiles, setFlippedTiles] = useState<ReadonlySet<string>>(new Set());
+
+    // Activation constraints so taps are clicks (not accidental drags). Pointer (mouse) needs an
+    // 8px move to start dragging; touch needs a 180ms hold so taps don't fire drags.
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
+    );
+
+    const toggleFlip = useCallback((tile: TileT) => {
+        setFlippedTiles((prev) => {
+            const next = new Set(prev);
+            const id = tileToString(tile);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    }, []);
+
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key !== "r" && e.key !== "R") return;
+            if (selectedTile === null) return;
+            // Ignore when typing in an input/textarea (none today, but be safe).
+            const target = e.target as HTMLElement | null;
+            const tag = target?.tagName ?? "";
+            if (tag === "INPUT" || tag === "TEXTAREA") return;
+            e.preventDefault();
+            toggleFlip(selectedTile);
+        };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [selectedTile, toggleFlip]);
 
     const isHumanTurn = useMemo(() => {
         if (state === null || humanPlayerId === null) return false;
@@ -51,20 +93,24 @@ export function Board() {
 
     const onTileSelect = (tile: TileT): void => {
         if (!isHumanTurn) return;
+        // Tapping a tile selects it; tapping the same tile again deselects.
+        // Drag or tap a drop zone to play. No auto-play on tap so the user has time to rotate.
         setSelectedTile((prev) => (prev !== null && equals(prev, tile) ? null : tile));
-        // If exactly one side is legal for this tile, auto-play on tap.
-        const sides = humanMoves
-            .filter((m): m is PlayMove => m.kind === "play" && equals(m.tile, tile))
-            .map((m) => m.side);
-        if (sides.length === 1) {
-            submitHumanMove({
-                kind: "play",
-                playerId: humanPlayerId,
-                tile,
-                side: sides[0]!,
-            });
-            setSelectedTile(null);
-        }
+    };
+
+    const onRotateSelected = (): void => {
+        if (selectedTile === null) return;
+        toggleFlip(selectedTile);
+    };
+
+    const playOnSide = (side: Side): void => {
+        if (selectedTile === null) return;
+        const move = humanMoves.find(
+            (m): m is PlayMove => m.kind === "play" && equals(m.tile, selectedTile) && m.side === side,
+        );
+        if (move === undefined) return;
+        submitHumanMove(move);
+        setSelectedTile(null);
     };
 
     const onDragEnd = (e: DragEndEvent): void => {
@@ -101,7 +147,7 @@ export function Board() {
     const canRight = selectedTile !== null ? sidesForSelected.includes("right") : anyPlay && canDropRight;
 
     return (
-        <DndContext onDragEnd={onDragEnd}>
+        <DndContext sensors={sensors} onDragEnd={onDragEnd}>
             <div className="flex flex-1 flex-col gap-3">
                 <ScoreBar state={state} />
 
@@ -131,6 +177,8 @@ export function Board() {
                         chain={state.chain}
                         canDropLeft={isHumanTurn && canLeft}
                         canDropRight={isHumanTurn && canRight}
+                        onTapLeft={() => playOnSide("left")}
+                        onTapRight={() => playOnSide("right")}
                     />
                 </div>
 
@@ -139,9 +187,15 @@ export function Board() {
                     <span className="text-pr-ivory-dim">
                         {isHumanTurn
                             ? mustPass
-                                ? "No legal play — you must pass."
-                                : "Your turn. Drag a tile to one of the chain ends."
-                            : `${state.seats[state.turnIndex]?.displayName ?? "?"} is playing…`}
+                                ? t("noLegalPlay")
+                                : t("yourTurn")
+                            : aiThinking
+                              ? t("aiThinking", {
+                                    name: state.seats[state.turnIndex]?.displayName ?? "?",
+                                })
+                              : t("isPlaying", {
+                                    name: state.seats[state.turnIndex]?.displayName ?? "?",
+                                })}
                     </span>
                     {mustPass && (
                         <button
@@ -149,7 +203,7 @@ export function Board() {
                             onClick={onPass}
                             className="rounded-lg bg-pr-red px-3 py-1 font-display text-sm text-pr-white"
                         >
-                            Pass
+                            {t("pass")}
                         </button>
                     )}
                 </div>
@@ -159,7 +213,9 @@ export function Board() {
                     hand={humanHand}
                     playable={playableTiles}
                     selectedTile={selectedTile}
+                    flippedTiles={flippedTiles}
                     onSelect={onTileSelect}
+                    onRotate={onRotateSelected}
                 />
             </div>
         </DndContext>

@@ -1,5 +1,30 @@
 import { create } from "zustand";
 import type { GameState, Move, PlayerId, RoundOutcome, TeamId } from "../engine/types.js";
+import type { Lang } from "../i18n/strings.js";
+
+const LANG_KEY = "dct.lang";
+
+function loadLang(): Lang {
+    try {
+        const v = localStorage.getItem(LANG_KEY);
+        if (v === "es" || v === "en") return v;
+    } catch {
+        // localStorage may be unavailable in some sandboxes; fall through.
+    }
+    // Default: pick based on browser language. PR Spanish speakers usually have es-* locales.
+    if (typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("es")) {
+        return "es";
+    }
+    return "en";
+}
+
+function saveLang(lang: Lang): void {
+    try {
+        localStorage.setItem(LANG_KEY, lang);
+    } catch {
+        // best-effort
+    }
+}
 import { applyMove, validMoves } from "../engine/moves.js";
 import { resolveStealPhase } from "../engine/steal.js";
 import {
@@ -26,12 +51,14 @@ export type GameStoreState = {
     humanPlayerId: PlayerId | null;
     aiThinking: boolean;
     lastZapato: TeamId | null;
+    lang: Lang;
 
     startSoloMatch: () => void;
     submitHumanMove: (move: Move) => void;
     advanceAi: () => void;
     startNextRound: () => void;
     returnToMenu: () => void;
+    setLang: (lang: Lang) => void;
 };
 
 const AI_THINK_MS = 700;
@@ -49,6 +76,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     humanPlayerId: null,
     aiThinking: false,
     lastZapato: null,
+    lang: loadLang(),
 
     startSoloMatch: () => {
         const seats = fourPartnerSeats(
@@ -127,6 +155,11 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
 
     returnToMenu: () => {
         set({ screen: "menu", state: null, humanPlayerId: null, aiThinking: false, lastZapato: null });
+    },
+
+    setLang: (lang) => {
+        saveLang(lang);
+        set({ lang });
     },
 }));
 

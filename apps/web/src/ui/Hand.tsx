@@ -3,17 +3,20 @@ import { CSS } from "@dnd-kit/utilities";
 import type { Hand as HandT, Tile as TileT } from "../engine/types.js";
 import { Tile } from "./Tile.js";
 import { tileToString } from "../engine/tiles.js";
+import { useT } from "../i18n/index.js";
 
 function DraggableTile({
     tile,
     canPlay,
     onClick,
     selected,
+    flipped,
 }: {
     tile: TileT;
     canPlay: boolean;
     onClick: () => void;
     selected: boolean;
+    flipped: boolean;
 }) {
     const id = tileToString(tile);
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -30,13 +33,13 @@ function DraggableTile({
         <button
             ref={setNodeRef}
             style={style}
-            onClick={canPlay ? onClick : undefined}
+            onClick={onClick}
             className={`touch-none transition-transform ${canPlay ? "hover:-translate-y-1" : "grayscale"}`}
             {...attributes}
             {...listeners}
             type="button"
         >
-            <Tile tile={tile} orientation="vertical" size="lg" selected={selected} />
+            <Tile tile={tile} orientation="vertical" size="lg" selected={selected} flipped={flipped} />
         </button>
     );
 }
@@ -45,26 +48,46 @@ type HandProps = {
     hand: HandT;
     playable: ReadonlyArray<TileT>;
     selectedTile: TileT | null;
+    flippedTiles: ReadonlySet<string>;
     onSelect: (tile: TileT) => void;
+    onRotate: () => void;
 };
 
-export function Hand({ hand, playable, selectedTile, onSelect }: HandProps) {
-    const isPlayable = (t: TileT) => playable.some((p) => p[0] === t[0] && p[1] === t[1]);
-    const isSelected = (t: TileT) => selectedTile !== null && selectedTile[0] === t[0] && selectedTile[1] === t[1];
+export function Hand({ hand, playable, selectedTile, flippedTiles, onSelect, onRotate }: HandProps) {
+    const t = useT();
+    const isPlayable = (tile: TileT) => playable.some((p) => p[0] === tile[0] && p[1] === tile[1]);
+    const isSelected = (tile: TileT) =>
+        selectedTile !== null && selectedTile[0] === tile[0] && selectedTile[1] === tile[1];
+    const isFlipped = (tile: TileT) => flippedTiles.has(tileToString(tile));
     return (
-        <div className="flex flex-wrap items-end justify-center gap-2 rounded-2xl bg-pr-coal-soft/40 p-3">
-            {hand.map((t) => (
-                <DraggableTile
-                    key={tileToString(t)}
-                    tile={t}
-                    canPlay={isPlayable(t)}
-                    selected={isSelected(t)}
-                    onClick={() => onSelect(t)}
-                />
-            ))}
-            {hand.length === 0 && (
-                <p className="px-2 py-3 text-sm text-pr-ivory-dim">No tiles — round over!</p>
-            )}
+        <div className="flex flex-col gap-2 rounded-2xl bg-pr-coal-soft/40 p-3">
+            <div className="flex flex-wrap items-end justify-center gap-2">
+                {hand.map((tile) => (
+                    <DraggableTile
+                        key={tileToString(tile)}
+                        tile={tile}
+                        canPlay={isPlayable(tile)}
+                        selected={isSelected(tile)}
+                        flipped={isFlipped(tile)}
+                        onClick={() => onSelect(tile)}
+                    />
+                ))}
+            </div>
+            <div className="flex items-center justify-between gap-2 text-[11px] text-pr-ivory-dim">
+                <span>{selectedTile === null ? t("tapToSelect") : t("selectedHint")}</span>
+                <button
+                    type="button"
+                    onClick={onRotate}
+                    disabled={selectedTile === null}
+                    aria-label={t("rotate")}
+                    className="flex items-center gap-1 rounded-lg border border-pr-coal-soft bg-pr-coal-soft/60 px-3 py-1 font-display text-pr-ivory transition-opacity hover:bg-pr-coal-soft disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                    <span aria-hidden>↻</span>
+                    <span>
+                        {t("rotate")} <span className="opacity-60">{t("rotateShortcut")}</span>
+                    </span>
+                </button>
+            </div>
         </div>
     );
 }
