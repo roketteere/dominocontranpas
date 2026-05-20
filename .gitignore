@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+.vite/
+.turbo/
+out/
+
+# Convex generated
+.convex/
+**/_generated/
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+.secrets/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Logs / coverage
+*.log
+npm-debug.log*
+pnpm-debug.log*
+coverage/
+.nyc_output/
+
+# PWA / SW build artifacts
+sw.js.map
+workbox-*.js
+workbox-*.js.map
+
+# Vitest
+.vitest-cache/
+
+# Native wrapper (Capacitor — once added)
+ios/App/App/public/
+android/app/src/main/assets/public/
+android/.gradle/
+android/build/
+android/app/build/
+ios/build/
+
+# Misc
+.claude.local/
