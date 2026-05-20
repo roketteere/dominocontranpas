@@ -32,19 +32,34 @@ game.
 ## Development
 
 ```bash
-# Run the web app
-pnpm --filter web dev
+# Install workspace deps
+pnpm install
 
-# Run the Convex backend (separate terminal)
-pnpm --filter convex dev
-
-# Engine tests
+# Engine tests (Phase 1)
 pnpm --filter web test
+pnpm --filter web test:watch       # watch mode
+
+# Coverage report
+pnpm --filter web exec vitest run --coverage
+
+# TypeScript typecheck (no emit)
+pnpm --filter web typecheck
+
+# Phase 2+ (not yet scaffolded):
+# pnpm --filter web dev             # vite dev server
+# pnpm --filter convex dev          # convex backend
 ```
 
 ## Status
 
-Pre-alpha. Engine + solo-vs-AI shipping first; multiplayer follows.
+Pre-alpha. **Phase 1 done:** pure rule engine + Vitest suite (48/48
+passing, 97% statement coverage). Engine lives in
+`apps/web/src/engine/` as React-free, Convex-free, IO-free TypeScript
+so the same code can run client-side (optimistic UI, offline solo) and
+server-side (Convex move validation, source of truth).
+
+Next up: Phase 2 — solo-vs-AI UI on top of the engine.
+
 See `IDEAS.md` for what's planned and what's parked. See the project's
 plan at
 `~/.claude/plans/i-am-puerto-rican-transient-gosling.md` for the full

@@ -8,6 +8,31 @@ Don't delete old entries; flip the status above.
 
 ## 2026-05-20 — Project genesis
 
+### `[shipped]` Phase 1: pure rule engine + Vitest suite
+First milestone landed in commits after the initial scaffold. Engine
+modules in `apps/web/src/engine/`:
+- `types.ts` — Tile, Hand, Chain, GameState, Move, StealEvent
+- `tiles.ts` — constructors + helpers (28-tile set, normalize, etc.)
+- `moves.ts` — `validMoves` + `applyMove`, chain placement logic
+- `scoring.ts` — domino / capicúa / chuchazo / tranca / zapato + match-end
+- `steal.ts` — `shouldSteal` + `resolveStealPhase` with injected RNG
+
+48/48 Vitest tests passing. Coverage: 97% statements, 100% functions,
+81% branches (the engine's hot paths are well-covered; uncovered
+branches are defensive error paths). Branch threshold tuned to 80%
+pragmatically for the first pass — see follow-up below.
+
+### `[idea]` Branch coverage follow-up
+Push engine branch coverage from 81% → 90%+ by adding edge-case tests:
+- moves.ts L46-47, L71-72: chain placement when the matching pip is on
+  the high side of the incoming tile
+- scoring.ts L68-69, L176-178: tranca branch with empty hands lookup
+  + isZapato edge case when winner has 0 (impossible, but coverage)
+- steal.ts L31, L69-76: degenerate states (undefined target hand,
+  rng clamp triggered)
+- tiles.ts L61-62: tileFromString NaN path
+Total ~6-8 small tests. Not blocking Phase 2.
+
 ### `[in-progress]` Core game: traditional Dominó Criollo + Tanpas steal mechanic
 Joel: *"I am puerto rican. We love playing 'capi cu' ... I want to create a
 regular puertorican domino game but, this game is called 'Dominos Con
