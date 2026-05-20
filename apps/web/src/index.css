@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme {
+    --color-pr-red: #ce1126;
+    --color-pr-blue: #0050f0;
+    --color-pr-blue-dark: #003a99;
+    --color-pr-white: #ffffff;
+    --color-pr-ivory: #f5ecd9;
+    --color-pr-ivory-dim: #d9cfb8;
+    --color-pr-coal: #1a1a1a;
+    --color-pr-coal-soft: #2a2a2a;
+    --color-pr-table: #1f3a2b;
+    --color-pr-table-dark: #142819;
+    --color-pr-wood: #6b4423;
+    --color-pr-wood-light: #8b5a2b;
+    --color-pr-sand: #e6c98c;
+    --color-pr-coqui: #a3e635;
+    --font-display: "Georgia", "Times New Roman", serif;
+}
+
+html,
+body,
+#root {
+    height: 100%;
+    margin: 0;
+    overscroll-behavior: none;
+}
+
+body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background:
+        radial-gradient(ellipse at center, var(--color-pr-table) 0%, var(--color-pr-table-dark) 100%);
+    min-height: 100vh;
+}
+
+/* Subtle wood-grain top/bottom edges for the "table" feel. */
+body::before,
+body::after {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    height: 12px;
+    background: linear-gradient(180deg, var(--color-pr-wood) 0%, var(--color-pr-wood-light) 100%);
+    z-index: 0;
+}
+body::before {
+    top: 0;
+}
+body::after {
+    bottom: 0;
+    transform: scaleY(-1);
+}
