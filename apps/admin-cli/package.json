@@ -1,0 +1,14 @@
+{
+    "name": "@dominocontranpas/admin-cli",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "description": "Owner-only CLI for managing dominoscontranpas users from the terminal. Wraps the same Convex queries the in-browser AdminPanel uses.",
+    "scripts": {
+        "start": "node src/index.js"
+    },
+    "dependencies": {
+        "convex": "^1.21.0",
+        "dotenv": "^16.4.5"
+    }
+}

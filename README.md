@@ -83,6 +83,76 @@ plan at
 `~/.claude/plans/i-am-puerto-rican-transient-gosling.md` for the full
 roadmap.
 
+## Admin CLI
+
+A small Node CLI lives at `apps/admin-cli/` for owner-only user
+management from the terminal. Wraps the same Convex queries the
+in-browser AdminPanel uses, but without leaving your shell. Useful
+when a family member asks for their recovery code or a co-admin
+needs to be promoted.
+
+Setup once:
+
+```powershell
+pnpm install
+copy apps/admin-cli/.env.example apps/admin-cli/.env
+# then edit apps/admin-cli/.env and fill in:
+#   CONVEX_URL      (already pre-filled with the prod URL)
+#   ADMIN_USER_ID   (your users._id from the Convex dashboard)
+#   OWNER_SECRET    (optional — only needed for set-owner)
+```
+
+Run from the repo root:
+
+```powershell
+pnpm --filter admin-cli start list                 # everyone
+pnpm --filter admin-cli start find joel            # filter by name
+pnpm --filter admin-cli start set-owner <userId>   # promote a co-admin
+```
+
+Full usage / output format / exit codes in `apps/admin-cli/README.md`.
+The server-side `users:adminListUsers` query gates by
+`isOwner === true` — if your `ADMIN_USER_ID` isn't an owner, the CLI
+returns an empty list (exit code 3).
+
+## Routing qwen to a remote ollama
+
+`.qwen-dispatch.ps1` (gitignored, repo root) dispatches qwen briefs
+to a local ollama at `http://localhost:11434` by default. When your
+own machine is busy (another Claude session is using the GPU), you
+can route through another ollama instance on the LAN — e.g. a
+spouse's or family member's computer — without changing any code:
+
+```powershell
+$env:OLLAMA_URL = "http://192.168.1.42:11434"   # her LAN IP + port
+.\.qwen-dispatch.ps1 -BriefPath .\BUG-NNN-brief.md -OutPath .\out.ts.out
+# … runs on her GPU. Reverts to localhost when you unset the env var:
+Remove-Item Env:OLLAMA_URL
+```
+
+One-time setup on the remote machine:
+
+1. Install ollama and pull the model: `ollama pull qwen2.5-coder:7b`.
+2. Expose ollama to the LAN — by default it binds to 127.0.0.1 only.
+   Set the env var `OLLAMA_HOST=0.0.0.0:11434` (machine-wide
+   recommended), then restart ollama.
+3. Open Windows Firewall (or whatever firewall) on port 11434 inbound
+   on the LAN profile.
+4. From your machine, verify reachability:
+   `curl http://<remote-ip>:11434/api/tags` should return her model
+   list as JSON.
+
+Once that works, dispatches from this repo will print
+`ollama: http://192.168.x.x:11434/api/generate` at the top of each
+run — confirmation that the remote endpoint is in use. The
+`teki-bridge` project (separate repo at
+`C:/Development/Claude/teki-bridge/`) is a GUI dispatcher that does
+the same routing with health monitoring — drop-in replacement once
+its HTTP/RPC surface lands.
+
+The qwen self-check rules in `Expectations.md` apply regardless of
+which ollama instance is serving the request.
+
 ## Game design highlights
 
 - **Server-authoritative.** Clients never see opponent hands. The steal
