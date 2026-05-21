@@ -1,8 +1,26 @@
 # Phase 3 — Convex backend + online multiplayer
 
-**Status:** plan only, not yet executed.
+**Status:** scaffolded 2026-05-20. Code in `apps/convex/` and
+`apps/web/src/ui/online/`. Awaiting one-time `pnpm --filter convex dev`
+to provision a deployment — see `apps/convex/SETUP.md` for the runbook.
 **Predecessor:** Phase 2 (solo-vs-AI) is shipped and playable locally.
 **Author:** Opus 4.7 + Joel, 2026-05-20.
+
+## Delta from the original plan (open questions resolved)
+
+- **Auth:** swapped magic-link to **anonymous device-based identity**
+  (localStorage UUID + freeform display name). No Resend dependency.
+  Real auth lands in Phase 4 when collections need cross-device
+  persistence. Schema reflects this: no `email`/`username` fields, no
+  `friendships` table.
+- **Friend invites:** deferred to Phase 3.5. Ship with room code +
+  share link only.
+- **Chat:** deferred.
+- **Steal audit retention:** 48h via `cleanupStealAudit` scheduled
+  function (self-reschedules every hour).
+- **Convex deployment:** scaffolded but not provisioned — `convex dev`
+  needs interactive OAuth which can't be done headlessly. Documented in
+  `apps/convex/SETUP.md`.
 
 This document is written so any competent coding agent (including
 ollama at ~90% accuracy) can execute each section without needing

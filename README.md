@@ -52,13 +52,14 @@ pnpm --filter web typecheck
 pnpm --filter web build
 pnpm --filter web preview          # serve the built bundle
 
-# Phase 3+ (not yet scaffolded):
-# pnpm --filter convex dev          # convex backend
+# Convex backend (Phase 3) — one-time setup
+# See apps/convex/SETUP.md for the full runbook.
+pnpm --filter convex dev
 ```
 
 ## Status
 
-Pre-alpha. **Phase 1 + 2 closed** (Joel playtested end-to-end).
+Pre-alpha. **Phases 1 + 2 closed; Phase 3 scaffolded.**
 
 - **Phase 1 (engine):** pure rule engine in `apps/web/src/engine/`.
   58/58 Vitest tests, ~99% statement / ~92% branch coverage.
@@ -68,9 +69,12 @@ Pre-alpha. **Phase 1 + 2 closed** (Joel playtested end-to-end).
   Bilingual ES (PR) + EN (US), wooden hand rack, table layout with
   opponents at top/left/right (CCW PR turn order), 90° tile rotation
   (R / Shift+R / scroll wheel / button), green/red playable tint.
-
-Next up: Phase 3 — Convex backend + online multiplayer. Full plan in
-`plans/phase3.md`.
+- **Phase 3 (Convex multiplayer):** scaffolded — schema, mutations,
+  queries, view-layer anti-cheat, scheduled functions (autopass +
+  audit cleanup), web lobby UI (create / join / seat picker / online
+  board). Anonymous device-based identity (no email, no magic link).
+  One-time `pnpm --filter convex dev` needed to provision the
+  deployment — see `apps/convex/SETUP.md` for the runbook.
 
 See `IDEAS.md` for what's planned and what's parked. See the project's
 plan at

@@ -8,6 +8,69 @@ Don't delete old entries; flip the status above.
 
 ## 2026-05-20 — Project genesis
 
+### `[in-progress]` Phase 3 scaffolded (2026-05-20)
+All Convex backend code + web online integration shipped. Awaiting
+one-time `pnpm --filter convex dev` to provision the deployment;
+`apps/convex/SETUP.md` is the runbook.
+
+Backend (`apps/convex/`):
+- `schema.ts`: users (anonymous deviceId), games, seats, playerHands,
+  history, stealAudit. No email/username fields (deferred to Phase 4).
+- `users.ts`: createOrGetUser, getUserById, getUserByDeviceId.
+- `lobbies.ts`: createGame (6-char room code from unambiguous
+  alphabet), joinByCode, addAiSeat, leaveLobby.
+- `games.ts`: startMatch, playTile, passTurn, aiAdvance,
+  startNextRound. Engine is the source of truth — assembles
+  GameState from tables, runs validMoves → applyMove →
+  resolveStealPhase → isRoundOver → applyRoundOutcome, persists
+  back. Steal RNG audit-logged.
+- `views.ts`: myGameView is the anti-cheat surface. Opponent hands
+  appear as counts only; steal events mask `stolenTile` for
+  non-involved viewers.
+- `heartbeat.ts`: pingSeat + enforceAutoPass (60s grace, 3 auto-
+  passes → AI fill-in) + cleanupStealAudit (48h retention,
+  self-reschedules every hour).
+- `crons.ts`: kicks the self-rescheduling scheduled functions on
+  first deploy.
+
+Open-question decisions taken without Joel's input (he authorized this):
+- Auth: anonymous device-based identity instead of magic-link Resend.
+- Friend invites: deferred to 3.5.
+- Chat: deferred.
+- Audit retention: 48h.
+
+Web (`apps/web/src/`):
+- `net/convexClient.ts`: ConvexReactClient init from VITE_CONVEX_URL.
+- `net/useOnlineGame.ts`: subscribes to myGameView + bumps lastSeenAt.
+- `state/identityStore.ts`: deviceId (localStorage UUID) + display
+  name.
+- `state/onlineGameStore.ts`: navigation state (which lobby screen).
+- `ui/online/UsernameSetup.tsx`: first-time name input.
+- `ui/online/LobbyHub.tsx`: Create / Join chooser.
+- `ui/online/CreateGame.tsx`: mode picker (4p-partners / 2p).
+- `ui/online/JoinGame.tsx`: paste 6-char code or follow ?join=
+  deep-link.
+- `ui/online/SeatPicker.tsx`: shows seats around the table, host
+  can add AI fill-ins + start match.
+- `ui/online/OnlineBoard.tsx`: reactive Convex subscription drives
+  the board; mutations dispatch playTile / passTurn. Reuses Phase 2
+  Tile / Hand / Chain / OpponentRow / ScoreBar.
+- `ui/online/OnlineRoundEnd.tsx` + `OnlineMatchEnd.tsx`.
+- MainMenu's "Play online" button is now live (was greyed out).
+- App.tsx wraps everything in ConvexProvider; falls back to an
+  "Online not configured" screen if VITE_CONVEX_URL is missing.
+
+Anti-cheat ratchet: `apps/web/e2e/anti-cheat.spec.ts` scaffolded as a
+Playwright spec. Requires deployment + `@playwright/test` install to
+run. Failure means a hand leaked into a payload — must be fixed.
+
+What's NOT done (deferred to Phase 3.5+):
+- Friend invites + invite inbox table.
+- Chat.
+- Push notifications.
+- Real auth (cross-device identity persistence).
+- Mobile-real-device validation of the online flow.
+
 ### `[shipped]` Phase 2 closed (2026-05-20)
 Joel playtested end-to-end on the live dev server; nothing else to fix
 at this pass. Final iterations in this batch:

@@ -6,6 +6,7 @@ export function MainMenu() {
     const lang = useGameStore((s) => s.lang);
     const setLang = useGameStore((s) => s.setLang);
     const t = useT();
+    const goOnline = () => useGameStore.setState({ screen: "online" });
     return (
         <div className="flex flex-1 flex-col items-center justify-center gap-8 text-center">
             <header className="space-y-2">
@@ -27,10 +28,10 @@ export function MainMenu() {
                 </button>
                 <button
                     type="button"
-                    disabled
-                    className="rounded-xl border border-pr-coal-soft px-8 py-3 font-display text-sm text-pr-ivory-dim opacity-60"
+                    onClick={goOnline}
+                    className="rounded-xl bg-pr-red px-8 py-3 font-display text-lg text-pr-white shadow-lg shadow-pr-red/30 transition-transform hover:scale-105 active:scale-95"
                 >
-                    {t("onlineComingSoon")}
+                    {lang === "es" ? "Jugar en línea" : "Play online"}
                 </button>
             </div>
 

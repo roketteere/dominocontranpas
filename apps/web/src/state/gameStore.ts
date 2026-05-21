@@ -43,7 +43,7 @@ import {
 } from "../engine/setup.js";
 import { chooseAiMove } from "../ai/heuristicAi.js";
 
-export type Screen = "menu" | "playing" | "round_end" | "match_end";
+export type Screen = "menu" | "playing" | "round_end" | "match_end" | "online";
 
 export type GameStoreState = {
     screen: Screen;
