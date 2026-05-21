@@ -196,6 +196,7 @@ export const adminListUsers = query({
             displayName: r.displayName,
             friendCode: r.friendCode ?? null,
             recoveryCode: r.recoveryCode ?? null,
+            isOwner: r.isOwner === true,
             createdAt: r.createdAt,
         }));
     },
