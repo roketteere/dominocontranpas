@@ -28,10 +28,19 @@ export function MainMenu() {
             <div className="flex flex-col gap-3">
                 <button
                     type="button"
-                    onClick={startSoloMatch}
+                    onClick={() => startSoloMatch({ enableTranpas: true })}
                     className="rounded-xl bg-pr-blue px-8 py-3 font-display text-lg text-pr-white shadow-lg shadow-pr-blue/30 transition-transform hover:scale-105 active:scale-95"
                 >
-                    {t("soloVsAi")}
+                    {lang === "es" ? "Solo vs IA · Con Tranpas" : "Solo vs AI · With Tranpas"}
+                </button>
+                <button
+                    type="button"
+                    onClick={() => startSoloMatch({ enableTranpas: false })}
+                    className="rounded-xl border-2 border-pr-blue/60 bg-pr-blue/10 px-8 py-2 font-display text-sm text-pr-ivory transition-transform hover:bg-pr-blue/20 active:scale-95"
+                >
+                    {lang === "es"
+                        ? "Solo vs IA · Clásico (sin robos)"
+                        : "Solo vs AI · Classic (no stealing)"}
                 </button>
                 <button
                     type="button"

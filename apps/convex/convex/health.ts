@@ -24,6 +24,7 @@ export const engineSmoke = query({
                 capicuaBonus: 25,
                 chuchazoBonus: 25,
                 mode: "4p-partners" as const,
+                enableTranpas: true,
             },
             history: [],
             lastActorPlayerId: null,

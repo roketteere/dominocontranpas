@@ -19,6 +19,7 @@ export const createGame = mutation({
     args: {
         hostUserId: v.id("users"),
         mode: v.union(v.literal("4p-partners"), v.literal("2p"), v.literal("solo-vs-ai")),
+        enableTranpas: v.boolean(),
     },
     handler: async (ctx, args) => {
         const host = await ctx.db.get(args.hostUserId);
@@ -52,6 +53,7 @@ export const createGame = mutation({
                 capicuaBonus: 25,
                 chuchazoBonus: 25,
                 mode: args.mode,
+                enableTranpas: args.enableTranpas,
             },
             lastOutcome: null,
             createdAt: now,

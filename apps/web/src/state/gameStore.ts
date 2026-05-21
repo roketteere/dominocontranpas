@@ -54,7 +54,7 @@ export type GameStoreState = {
     lastZapato: TeamId | null;
     lang: Lang;
 
-    startSoloMatch: () => void;
+    startSoloMatch: (opts?: { enableTranpas?: boolean }) => void;
     submitHumanMove: (move: Move) => void;
     advanceAi: () => void;
     startNextRound: () => void;
@@ -79,12 +79,12 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     lastZapato: null,
     lang: loadLang(),
 
-    startSoloMatch: () => {
+    startSoloMatch: (opts?: { enableTranpas?: boolean }) => {
         const seats = fourPartnerSeats(
             ["Tú", "Lefty", "Compa", "Tía Yari"],
             [false, true, true, true],
         );
-        const options = defaultGameOptions("solo-vs-ai");
+        const options = defaultGameOptions("solo-vs-ai", opts?.enableTranpas ?? true);
         const base = initialGameState(seats, options);
         const dealt = dealRound(base, cryptoRng(), null);
         const humanSeat = seats[0]!;
@@ -108,7 +108,9 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
         else playPass();
         const afterMove = applyMove(current, move);
         const beforeStealHistoryLen = afterMove.history.length;
-        const afterSteal = resolveStealPhase(afterMove, cryptoRng());
+        const afterSteal = current.options.enableTranpas
+            ? resolveStealPhase(afterMove, cryptoRng())
+            : afterMove;
         if (afterSteal.history.length > beforeStealHistoryLen) {
             const last = afterSteal.history[afterSteal.history.length - 1];
             if (last !== undefined && last.kind === "steal") playSwoosh();
@@ -133,7 +135,9 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
             else playPass();
             const afterMove = applyMove(stateNow, move);
             const beforeStealHistoryLen = afterMove.history.length;
-            const afterSteal = resolveStealPhase(afterMove, cryptoRng());
+            const afterSteal = stateNow.options.enableTranpas
+                ? resolveStealPhase(afterMove, cryptoRng())
+                : afterMove;
             if (afterSteal.history.length > beforeStealHistoryLen) {
                 const last = afterSteal.history[afterSteal.history.length - 1];
                 if (last !== undefined && last.kind === "steal") playSwoosh();

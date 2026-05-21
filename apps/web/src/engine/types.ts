@@ -115,6 +115,8 @@ export type GameOptions = {
     readonly capicuaBonus: number;
     readonly chuchazoBonus: number;
     readonly mode: GameMode;
+    // When false, the Tranpas steal mechanic is disabled — classic trust-based domino.
+    readonly enableTranpas: boolean;
 };
 
 // Represents the current state of the game.

@@ -13,12 +13,16 @@ import type {
 import { allDoubleSixTiles, containsTile, tile as makeTile } from "./tiles.js";
 
 // Default game options for a new match.
-export function defaultGameOptions(mode: GameMode = "4p-partners"): GameOptions {
+export function defaultGameOptions(
+    mode: GameMode = "4p-partners",
+    enableTranpas: boolean = true,
+): GameOptions {
     return {
         targetScore: 200,
         capicuaBonus: 25,
         chuchazoBonus: 25,
         mode,
+        enableTranpas,
     };
 }
 

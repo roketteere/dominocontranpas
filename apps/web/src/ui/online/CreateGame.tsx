@@ -18,6 +18,7 @@ export function CreateGame() {
     const createGame = useMutation(api.lobbies.createGame);
 
     const [mode, setMode] = useState<Mode>("4p-partners");
+    const [enableTranpas, setEnableTranpas] = useState(true);
     const [creating, setCreating] = useState(false);
 
     const onCreate = async () => {
@@ -27,6 +28,7 @@ export function CreateGame() {
             const { gameId, roomCode } = await createGame({
                 hostUserId: me._id,
                 mode,
+                enableTranpas,
             });
             setGame(gameId, roomCode);
         } finally {
@@ -75,6 +77,46 @@ export function CreateGame() {
                             {lang === "es"
                                 ? "7 fichas cada uno; 14 muertas."
                                 : "7 tiles each; 14 dead."}
+                        </div>
+                    </div>
+                </label>
+            </div>
+
+            <div className="mt-2 flex flex-col gap-2">
+                <p className="text-[10px] uppercase tracking-wider text-pr-ivory-dim">
+                    {lang === "es" ? "Reglas" : "Rules"}
+                </p>
+                <label className="flex items-center gap-3 rounded-lg border border-pr-coal-soft bg-pr-coal-soft/40 px-4 py-2 text-left">
+                    <input
+                        type="radio"
+                        name="rules"
+                        checked={enableTranpas}
+                        onChange={() => setEnableTranpas(true)}
+                    />
+                    <div>
+                        <div className="font-display text-pr-ivory">Con Tranpas</div>
+                        <div className="text-[11px] text-pr-ivory-dim">
+                            {lang === "es"
+                                ? "El próximo jugador roba una ficha a ciegas."
+                                : "Next player blindly steals a tile."}
+                        </div>
+                    </div>
+                </label>
+                <label className="flex items-center gap-3 rounded-lg border border-pr-coal-soft bg-pr-coal-soft/40 px-4 py-2 text-left">
+                    <input
+                        type="radio"
+                        name="rules"
+                        checked={!enableTranpas}
+                        onChange={() => setEnableTranpas(false)}
+                    />
+                    <div>
+                        <div className="font-display text-pr-ivory">
+                            {lang === "es" ? "Clásico" : "Classic"}
+                        </div>
+                        <div className="text-[11px] text-pr-ivory-dim">
+                            {lang === "es"
+                                ? "Dominó tradicional, sin robos. Confianza pura."
+                                : "Traditional domino, no stealing. Pure trust."}
                         </div>
                     </div>
                 </label>

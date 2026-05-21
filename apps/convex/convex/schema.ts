@@ -38,6 +38,7 @@ export default defineSchema({
             capicuaBonus: v.number(),
             chuchazoBonus: v.number(),
             mode: v.string(),
+            enableTranpas: v.boolean(),
         }),
         lastActorUserId: v.optional(v.id("users")),
         lastOutcome: v.any(),

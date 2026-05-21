@@ -45,7 +45,7 @@ function viewToEngineState(view: {
     turnIndex: number;
     turnNumber: number;
     scores: { A: number; B: number };
-    options: { targetScore: 100 | 150 | 200; capicuaBonus: number; chuchazoBonus: number; mode: string };
+    options: { targetScore: 100 | 150 | 200; capicuaBonus: number; chuchazoBonus: number; mode: string; enableTranpas: boolean };
     chain: ChainT;
     lastOutcome: RoundOutcome | null;
     seats: { position: number; team: "A" | "B"; isAI: boolean; displayName: string }[];
@@ -80,6 +80,7 @@ function viewToEngineState(view: {
             capicuaBonus: view.options.capicuaBonus,
             chuchazoBonus: view.options.chuchazoBonus,
             mode: view.options.mode as GameState["options"]["mode"],
+            enableTranpas: view.options.enableTranpas,
         },
         history: view.history as unknown as GameState["history"],
         lastActorPlayerId: null,

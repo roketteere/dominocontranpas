@@ -50,6 +50,7 @@ function defaultOptions(): GameOptions {
         capicuaBonus: 25,
         chuchazoBonus: 25,
         mode: "4p-partners",
+        enableTranpas: true,
     };
 }
 
