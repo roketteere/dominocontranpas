@@ -2,7 +2,7 @@
  * Anti-cheat ratchet test.
  *
  * This test is the load-bearing assertion that the server-authoritative invariant of the
- * Tanpas game holds: NO client subscription should ever contain another player's hand
+ * Tranpas game holds: NO client subscription should ever contain another player's hand
  * contents, and steal events not involving the local player should have a masked `stolenTile`.
  *
  * To run:

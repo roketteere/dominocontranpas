@@ -54,7 +54,7 @@ export type StringKey =
 
 export const STRINGS: Record<Lang, Record<StringKey, string>> = {
     es: {
-        appTitle: "Dominos Con Tanpas",
+        appTitle: "Dominos Con Tranpas",
         appTagline: "Dominó criollo tradicional con la mecánica del robo.",
         soloVsAi: "Solo vs IA",
         onlineComingSoon: "En línea con amigos (próximamente en Fase 3)",
@@ -107,7 +107,7 @@ export const STRINGS: Record<Lang, Record<StringKey, string>> = {
         switchTo: "Switch to English",
     },
     en: {
-        appTitle: "Dominos Con Tanpas",
+        appTitle: "Dominos Con Tranpas",
         appTagline: "Traditional Dominó Criollo plus the steal mechanic.",
         soloVsAi: "Solo vs AI",
         onlineComingSoon: "Online with friends (coming in Phase 3)",

@@ -10,10 +10,17 @@ export function MainMenu() {
     return (
         <div className="flex flex-1 flex-col items-center justify-center gap-8 text-center">
             <header className="space-y-2">
-                <h1 className="font-display text-4xl text-pr-ivory">
+                <div className="flex items-center justify-center gap-2 text-2xl">
+                    <span aria-hidden>🇵🇷</span>
+                    <span className="text-[11px] uppercase tracking-[0.3em] text-pr-coqui">
+                        {lang === "es" ? "Hecho en Borinquen" : "Made in Borinquen"}
+                    </span>
+                    <span aria-hidden>🐸</span>
+                </div>
+                <h1 className="font-display text-5xl text-pr-ivory">
                     <span className="text-pr-red">Dominos</span>{" "}
                     <span className="text-pr-ivory-dim">Con</span>{" "}
-                    <span className="text-pr-blue">Tanpas</span>
+                    <span className="text-pr-blue">Tranpas</span>
                 </h1>
                 <p className="text-sm text-pr-ivory-dim">{t("appTagline")}</p>
             </header>

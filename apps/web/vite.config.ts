@@ -21,7 +21,7 @@ export default defineConfig({
     server: serverConfig,
     resolve: {
         alias: {
-            "@convex": path.resolve(here, "../convex"),
+            "@convex": path.resolve(here, "../convex/convex"),
         },
     },
     build: {

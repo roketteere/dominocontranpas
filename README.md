@@ -1,4 +1,4 @@
-# Dominos Con Tanpas
+# Dominos Con Tranpas
 
 A Puerto Rican–style online domino game with a twist: after every turn, the
 next player blindly steals one tile from the player who just went. Reach
@@ -10,10 +10,10 @@ on their phones.
 
 Traditional **Dominó Criollo** rules (double-six, 4 players in 2 teams,
 counter-clockwise, capicúa & chuchazo bonuses, lock / tranca scoring)
-layered with one new mechanic: **Tanpas** (lit. "lids" / "caps") — a
-forced cross-team tile steal that turns the real-world cheating problem
-(partners signaling via text or glance) into a deliberate part of the
-game.
+layered with one new mechanic: **Tranpas** ("tricks" / "cheats" in
+PR slang, from *trampas*) — a forced cross-team tile steal that turns
+the real-world cheating problem (partners signaling via text or
+glance) into a deliberate part of the game.
 
 ## Modes
 

@@ -2,7 +2,8 @@ import { v, ConvexError } from "convex/values";
 import { mutation } from "./_generated/server.js";
 
 const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const AI_NAMES: Record<number, string> = { 0: "Sur", 1: "Lefty", 2: "Compa", 3: "Righty" };
+// Familiar PR-flavored names for AI fill-ins.
+const AI_NAMES: Record<number, string> = { 0: "Tito", 1: "Lefty", 2: "Compa", 3: "Tía Yari" };
 
 function generateRoomCode(): string {
     let out = "";

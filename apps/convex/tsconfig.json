@@ -17,6 +17,6 @@
     "noEmit": true,
     "declaration": false
   },
-  "include": ["./**/*.ts"],
-  "exclude": ["node_modules", "_generated", "dist"]
+  "include": ["convex/**/*.ts"],
+  "exclude": ["node_modules", "convex/_generated", "dist"]
 }

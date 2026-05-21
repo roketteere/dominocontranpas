@@ -68,7 +68,7 @@ export function SeatPicker() {
                         if (roomCode === null) return;
                         const url = `${window.location.origin}${window.location.pathname}?join=${roomCode}`;
                         if (navigator.share) {
-                            void navigator.share({ title: "Dominos Con Tanpas", url });
+                            void navigator.share({ title: "Dominos Con Tranpas", url });
                         } else {
                             void navigator.clipboard?.writeText(url);
                         }

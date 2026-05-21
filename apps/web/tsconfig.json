@@ -19,7 +19,7 @@
     "declaration": false,
     "types": ["vite/client"],
     "paths": {
-      "@convex/*": ["../convex/*"]
+      "@convex/*": ["../convex/convex/*"]
     }
   },
   "include": ["src/**/*", "vite.config.ts", "vitest.config.ts"],

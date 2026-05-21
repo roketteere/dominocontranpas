@@ -80,7 +80,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
 
     startSoloMatch: () => {
         const seats = fourPartnerSeats(
-            ["You", "Lefty", "Compa", "Righty"],
+            ["Tú", "Lefty", "Compa", "Tía Yari"],
             [false, true, true, true],
         );
         const options = defaultGameOptions("solo-vs-ai");

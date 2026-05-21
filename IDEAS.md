@@ -1,4 +1,4 @@
-# IDEAS.md — Dominos Con Tanpas
+# IDEAS.md — Dominos Con Tranpas
 
 Append-only log of features, proposals, and "remember-this" notes. Status
 tags: `[idea]` → `[in-progress]` → `[shipped]` / `[parked]` / `[rejected]`.
@@ -166,10 +166,10 @@ Push engine branch coverage from 81% → 90%+ by adding edge-case tests:
 - tiles.ts L61-62: tileFromString NaN path
 Total ~6-8 small tests. Not blocking Phase 2.
 
-### `[in-progress]` Core game: traditional Dominó Criollo + Tanpas steal mechanic
+### `[in-progress]` Core game: traditional Dominó Criollo + Tranpas steal mechanic
 Joel: *"I am puerto rican. We love playing 'capi cu' ... I want to create a
 regular puertorican domino game but, this game is called 'Dominos Con
-Tanpas' because people can cheat and tell their partner via message or show
+Tranpas' because people can cheat and tell their partner via message or show
 them in person their dominos. To combat that and make it fun, ... the next
 person can take 1 domino from the previous player. IF they get down to 1,
 as a reward to making it there, a person with 1 domino cannot have their 1

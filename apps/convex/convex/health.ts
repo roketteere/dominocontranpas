@@ -3,7 +3,7 @@
 // this file, the cross-package import works and the rest of Phase 3 can build on it.
 
 import { query } from "./_generated/server.js";
-import { validMoves } from "../web/src/engine/moves.js";
+import { validMoves } from "../../web/src/engine/moves.js";
 
 // Smoke check: returns the number of validMoves in a degenerate state. Caller never relies on
 // the value; we only need to prove the import is bundleable.

@@ -1,4 +1,4 @@
-# CLAUDE.md — Dominos Con Tanpas
+# CLAUDE.md — Dominos Con Tranpas
 
 Per-project Claude guidance. Read at session start alongside
 `IDEAS.md` and `MEMORY.md`.
@@ -6,7 +6,7 @@ Per-project Claude guidance. Read at session start alongside
 ## What this project is
 
 Online Puerto Rican domino game. Traditional **Dominó Criollo** rules
-plus a unique anti-cheat steal mechanic ("Tanpas"). Mobile-first PWA,
+plus a unique anti-cheat steal mechanic ("Tranpas"). Mobile-first PWA,
 React + TypeScript + Convex backend.
 
 Full implementation plan:

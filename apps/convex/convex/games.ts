@@ -2,20 +2,20 @@ import { v, ConvexError } from "convex/values";
 import { mutation, internalMutation } from "./_generated/server.js";
 import type { Id } from "./_generated/dataModel.js";
 import { internal } from "./_generated/api.js";
-import { applyMove, validMoves } from "../web/src/engine/moves.js";
+import { applyMove, validMoves } from "../../web/src/engine/moves.js";
 import {
     applyRoundOutcome,
     computeRoundOutcome,
     isRoundOver,
     isMatchOver,
-} from "../web/src/engine/scoring.js";
-import { resolveStealPhase } from "../web/src/engine/steal.js";
+} from "../../web/src/engine/scoring.js";
+import { resolveStealPhase } from "../../web/src/engine/steal.js";
 import {
     allDoubleSixTiles,
     containsTile,
     tile as makeTile,
-} from "../web/src/engine/tiles.js";
-import { chooseAiMove } from "../web/src/ai/heuristicAi.js";
+} from "../../web/src/engine/tiles.js";
+import { chooseAiMove } from "../../web/src/ai/heuristicAi.js";
 import type {
     GameState,
     Hand,
@@ -25,7 +25,7 @@ import type {
     PlayerSeat,
     Rng,
     Tile,
-} from "../web/src/engine/types.js";
+} from "../../web/src/engine/types.js";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────────────────────
 
