@@ -1,9 +1,19 @@
 import { useState } from "react";
 import { useGameStore } from "../state/gameStore.js";
 
+const IN_MATCH_SCREENS = new Set(["playing", "round_end"]);
+
 export function SettingsMenu() {
     const [open, setOpen] = useState(false);
     const lang = useGameStore((s) => s.lang);
+    const screen = useGameStore((s) => s.screen);
+    const returnToMenu = useGameStore((s) => s.returnToMenu);
+    const inMatch = IN_MATCH_SCREENS.has(screen);
+
+    const quit = () => {
+        returnToMenu();
+        setOpen(false);
+    };
 
     return (
         <div className="relative select-none">
@@ -20,6 +30,15 @@ export function SettingsMenu() {
                     <p className="font-display text-pr-coqui">
                         {lang === "es" ? "Ajustes" : "Settings"}
                     </p>
+                    {inMatch && (
+                        <button
+                            type="button"
+                            onClick={quit}
+                            className="w-full rounded-xl border border-pr-red/60 bg-pr-red/20 py-2 text-sm text-pr-ivory transition-colors hover:bg-pr-red/40"
+                        >
+                            {lang === "es" ? "Abandonar partida" : "Quit match"}
+                        </button>
+                    )}
                     <p className="text-[11px] text-pr-ivory-dim">
                         {lang === "es"
                             ? "Más opciones próximamente."
