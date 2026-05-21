@@ -19,17 +19,17 @@ export function AudioControls() {
     const icon = muted || masterVolume === 0 ? "🔇" : masterVolume > 0.5 ? "🔊" : "🔉";
 
     return (
-        <div className="fixed right-3 top-3 z-30 select-none">
+        <div className="relative select-none">
             <button
                 type="button"
                 onClick={() => setOpen((v) => !v)}
                 aria-label={lang === "es" ? "Sonido" : "Sound"}
-                className="rounded-full border border-pr-coal-soft/60 bg-pr-coal-soft/70 px-3 py-1 text-lg leading-none text-pr-ivory shadow hover:bg-pr-coal-soft"
+                className="flex items-center justify-center rounded-full border border-pr-coal-soft/60 bg-pr-coal-soft/70 px-3 py-1 text-lg leading-none text-pr-ivory shadow hover:bg-pr-coal-soft"
             >
                 {icon}
             </button>
             {open && (
-                <div className="mt-2 w-64 space-y-3 rounded-2xl border border-pr-coal-soft/60 bg-pr-table-dark/95 p-4 text-sm text-pr-ivory shadow-xl">
+                <div className="absolute right-0 mt-2 w-64 space-y-3 rounded-2xl border border-pr-coal-soft/60 bg-pr-table-dark/95 p-4 text-sm text-pr-ivory shadow-xl">
                     <div className="flex items-center justify-between">
                         <span className="font-display text-pr-coqui">
                             {lang === "es" ? "Sonido" : "Sound"}
