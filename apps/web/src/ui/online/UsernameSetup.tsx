@@ -17,16 +17,37 @@ export function UsernameSetup({ onDone }: { onDone: () => void }) {
     const [name, setName] = useState("");
     const [avatar, setLocalAvatar] = useState<AvatarId>(storeAvatar);
     const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const submit = async () => {
         const trimmed = name.trim();
         if (trimmed.length < 1 || trimmed.length > 24) return;
         setSubmitting(true);
+        setError(null);
+        // Try with the new avatar arg first; if the backend hasn't been pushed yet and rejects
+        // unknown args, retry without it so registration still works.
         try {
             await createOrGetUser({ deviceId, displayName: trimmed, avatar });
             setDisplayName(trimmed);
             setAvatar(avatar);
             onDone();
+            return;
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            if (msg.includes("avatar") || msg.toLowerCase().includes("argument")) {
+                // Backend hasn't been pushed with the new schema yet — retry without avatar.
+                try {
+                    await createOrGetUser({ deviceId, displayName: trimmed } as { deviceId: string; displayName: string });
+                    setDisplayName(trimmed);
+                    setAvatar(avatar);
+                    onDone();
+                    return;
+                } catch (e2) {
+                    setError(e2 instanceof Error ? e2.message : String(e2));
+                }
+            } else {
+                setError(msg);
+            }
         } finally {
             setSubmitting(false);
         }
@@ -70,6 +91,11 @@ export function UsernameSetup({ onDone }: { onDone: () => void }) {
                 </div>
             </div>
 
+            {error !== null && (
+                <p className="max-w-xs rounded-lg bg-pr-red/30 px-3 py-2 text-xs text-pr-ivory">
+                    {error}
+                </p>
+            )}
             <button
                 type="button"
                 onClick={() => void submit()}
