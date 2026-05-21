@@ -39,12 +39,12 @@ function DropZone({
             type="button"
             onClick={active ? onTap : undefined}
             disabled={!active}
-            className={`flex h-10 min-w-12 items-center justify-center rounded-md border-2 border-dashed text-[10px] uppercase tracking-wider transition-colors ${
+            className={`flex h-16 min-w-14 items-center justify-center rounded-xl border-2 text-base font-bold transition-all ${
                 active
                     ? isOver
-                        ? "border-pr-coqui bg-pr-coqui/20 text-pr-coqui"
-                        : "border-pr-ivory-dim bg-pr-ivory/10 text-pr-ivory-dim hover:bg-pr-ivory/20"
-                    : "border-pr-coal-soft text-transparent"
+                        ? "border-pr-coqui bg-pr-coqui/30 text-pr-coqui scale-110"
+                        : "border-lime-400 bg-lime-400/10 text-lime-400 dct-pulse"
+                    : "border-transparent text-transparent"
             }`}
         >
             {active ? label : ""}

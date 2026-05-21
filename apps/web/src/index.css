@@ -43,6 +43,14 @@ body {
     animation: dct-shake 0.5s ease-in-out;
 }
 
+@keyframes dct-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+}
+.dct-pulse {
+    animation: dct-pulse 1.1s ease-in-out infinite;
+}
+
 /* Subtle wood-grain top/bottom edges for the "table" feel. */
 body::before,
 body::after {

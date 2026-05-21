@@ -7,6 +7,7 @@ import { Chain } from "./Chain.js";
 import { Hand } from "./Hand.js";
 import { OpponentRow } from "./OpponentRow.js";
 import { ScoreBar } from "./ScoreBar.js";
+import { Tile } from "./Tile.js";
 import type { Rotation } from "./Tile.js";
 import { useT } from "../i18n/index.js";
 import { PlacementModal } from "./PlacementModal.js";
@@ -18,12 +19,15 @@ export function Board() {
     const humanPlayerId = useGameStore((s) => s.humanPlayerId);
     const submitHumanMove = useGameStore((s) => s.submitHumanMove);
     const aiThinking = useGameStore((s) => s.aiThinking);
+    const lang = useGameStore((s) => s.lang);
     const t = useT();
 
     const [step, setStep] = useState<PlacementStep>("idle");
     const [pendingTile, setPendingTile] = useState<TileT | null>(null);
     const [pickedPipIdx, setPickedPipIdx] = useState<0 | 1 | null>(null);
     const [shaking, setShaking] = useState(false);
+    const [yourTurnToast, setYourTurnToast] = useState(false);
+    const [sideHintVisible, setSideHintVisible] = useState(false);
 
     const isHumanTurn = useMemo(() => {
         if (state === null || humanPlayerId === null) return false;
@@ -63,6 +67,14 @@ export function Board() {
             setPickedPipIdx(null);
         }
     }, [isHumanTurn]);
+
+    // Brief "Your turn!" toast whenever it becomes the human's turn.
+    useEffect(() => {
+        if (!isHumanTurn || mustPass) return;
+        setYourTurnToast(true);
+        const id = setTimeout(() => setYourTurnToast(false), 1800);
+        return () => clearTimeout(id);
+    }, [isHumanTurn]); // eslint-disable-line react-hooks/exhaustive-deps
 
     if (state === null || humanPlayerId === null) return null;
 
@@ -119,6 +131,8 @@ export function Board() {
     const onPickPip = (idx: 0 | 1): void => {
         setPickedPipIdx(idx);
         setStep("picking-side");
+        setSideHintVisible(true);
+        setTimeout(() => setSideHintVisible(false), 2000);
     };
 
     const onCancelPlacement = (): void => {
@@ -202,11 +216,7 @@ export function Board() {
     const turnMessage = (() => {
         if (isHumanTurn) {
             if (mustPass) return t("noLegalPlay");
-            if (step === "picking-side") {
-                return useGameStore.getState().lang === "es"
-                    ? "Toca un extremo de la cadena"
-                    : "Tap a chain end";
-            }
+            if (step === "picking-side") return "";
             return t("yourTurn");
         }
         if (aiThinking) {
@@ -240,27 +250,43 @@ export function Board() {
                     />
                 </div>
 
-                <div className="flex items-center justify-between rounded-xl bg-pr-coal-soft/40 px-3 py-2 text-sm">
-                    <span className="text-pr-ivory-dim">{turnMessage}</span>
-                    {mustPass && (
-                        <button
-                            type="button"
-                            onClick={onPass}
-                            className="rounded-lg bg-pr-red px-3 py-1 font-display text-sm text-pr-white"
+                {step === "picking-side" && pendingTile !== null && pickedPipIdx !== null ? (
+                    /* Staged tile bar — shows during picking-side step */
+                    <div className="flex items-center gap-3 rounded-xl bg-pr-coal-soft/50 px-3 py-2">
+                        <Tile
+                            tile={pendingTile}
+                            orientation="vertical"
+                            size="sm"
+                            rotation={pickedPipIdx === 1 ? 180 : 0}
+                        />
+                        <span
+                            className="flex-1 text-sm text-pr-ivory transition-opacity duration-700"
+                            style={{ opacity: sideHintVisible ? 1 : 0.4 }}
                         >
-                            {t("pass")}
-                        </button>
-                    )}
-                    {step === "picking-side" && !mustPass && (
+                            {lang === "es" ? "Toca un extremo →" : "Tap a chain end →"}
+                        </span>
                         <button
                             type="button"
                             onClick={onCancelPlacement}
-                            className="rounded-lg border border-pr-coal-soft bg-pr-coal-soft/60 px-3 py-1 font-display text-sm text-pr-ivory"
+                            className="rounded-lg border border-pr-coal-soft/70 px-3 py-1 text-xs text-pr-ivory-dim hover:bg-pr-coal-soft/60"
                         >
-                            {t("language") === "Idioma" ? "Cancelar" : "Cancel"}
+                            {lang === "es" ? "Cancelar" : "Cancel"}
                         </button>
-                    )}
-                </div>
+                    </div>
+                ) : (
+                    <div className="flex items-center justify-between rounded-xl bg-pr-coal-soft/40 px-3 py-2 text-sm">
+                        <span className="text-pr-ivory-dim">{turnMessage}</span>
+                        {mustPass && (
+                            <button
+                                type="button"
+                                onClick={onPass}
+                                className="rounded-lg bg-pr-red px-3 py-1 font-display text-sm text-pr-white"
+                            >
+                                {t("pass")}
+                            </button>
+                        )}
+                    </div>
+                )}
 
                 {/* Hand. Shakes briefly on forced pass or tap-of-red-tile. */}
                 <div className={shaking ? "dct-shake" : ""}>
@@ -289,6 +315,16 @@ export function Board() {
                     onCancel={onCancelPlacement}
                 />
             )}
+
+            {/* Transient "Your turn!" toast — fades in/out, pointer-events none */}
+            <div
+                className="pointer-events-none fixed inset-x-0 top-20 z-20 flex justify-center transition-opacity duration-500"
+                style={{ opacity: yourTurnToast ? 1 : 0 }}
+            >
+                <div className="rounded-full bg-pr-coqui px-6 py-2 font-display text-lg text-pr-coal shadow-lg">
+                    {lang === "es" ? "¡Tu turno!" : "Your turn!"}
+                </div>
+            </div>
         </>
     );
 }
