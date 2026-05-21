@@ -26,6 +26,9 @@ export type StringKey =
     | "immune"
     | "play"
     | "pass"
+    | "draw"
+    | "mustDraw"
+    | "boneyard"
     | "points"
     | "pointsToTeam"
     | "nextRound"
@@ -79,6 +82,9 @@ export const STRINGS: Record<Lang, Record<StringKey, string>> = {
         immune: "INMUNE",
         play: "Jugar",
         pass: "Pasar",
+        draw: "Robar",
+        mustDraw: "No tienes jugada — roba del montón.",
+        boneyard: "Montón",
         points: "Puntos",
         pointsToTeam: "para el equipo {team}",
         nextRound: "Próxima ronda",
@@ -132,6 +138,9 @@ export const STRINGS: Record<Lang, Record<StringKey, string>> = {
         immune: "IMMUNE",
         play: "Play",
         pass: "Pass",
+        draw: "Draw",
+        mustDraw: "No legal play — draw from the boneyard.",
+        boneyard: "Boneyard",
         points: "Points",
         pointsToTeam: "to team {team}",
         nextRound: "Next round",

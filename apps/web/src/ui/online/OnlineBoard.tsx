@@ -46,13 +46,14 @@ function viewToEngineState(view: {
     scores: { A: number; B: number };
     options: { targetScore: 100 | 150 | 200; capicuaBonus: number; chuchazoBonus: number; mode: string; enableTranpas: boolean };
     chain: ChainT;
+    boneyardCount: number;
     lastOutcome: RoundOutcome | null;
     seats: { position: number; team: "A" | "B"; isAI: boolean; displayName: string }[];
     mySeatPosition: number | null;
     myHand: number[][] | null;
     opponentCounts: Record<number, number>;
     history: { kind: string; [k: string]: unknown }[];
-}): { state: GameState; opponentCounts: Record<number, number> } {
+}): { state: GameState; opponentCounts: Record<number, number>; boneyardCount: number } {
     const seats: PlayerSeat[] = view.seats.map((s) => ({
         playerId: `seat-${s.position}` as unknown as PlayerId,
         position: s.position as 0 | 1 | 2 | 3,
@@ -70,11 +71,11 @@ function viewToEngineState(view: {
         seats,
         hands,
         chain: view.chain,
-        // BUG-002: server view does not yet expose the boneyard. The client engine sees an empty
-        // boneyard and falls back to pass-when-stuck. validMoves on the client is advisory only
-        // (server is source of truth), so the worst case is the UI offers `pass` while the server
-        // would already have auto-drawn — fixed once views.ts exposes boneyardCount.
-        boneyard: [],
+        // The server keeps the real boneyard secret (anti-cheat). For client-side validMoves to
+        // return [draw] vs [pass] correctly, populate N placeholder tiles matching the count.
+        // The DrawMove the engine produces will carry a placeholder tile; the server overrides
+        // with the real boneyard head when the drawTile mutation runs.
+        boneyard: Array.from({ length: view.boneyardCount }, () => makeTile(0, 0)),
         turnIndex: view.turnIndex,
         turnNumber: view.turnNumber,
         scores: view.scores,
@@ -90,7 +91,7 @@ function viewToEngineState(view: {
         lastActorPlayerId: null,
         lastOutcome: view.lastOutcome,
     };
-    return { state, opponentCounts: view.opponentCounts };
+    return { state, opponentCounts: view.opponentCounts, boneyardCount: view.boneyardCount };
 }
 
 export function OnlineBoard() {
@@ -100,6 +101,7 @@ export function OnlineBoard() {
     const { view, myUserId } = useOnlineGame(gameId);
     const playTile = useMutation(api.games.playTile);
     const passTurn = useMutation(api.games.passTurn);
+    const drawTile = useMutation(api.games.drawTile);
 
     const [selectedTile, setSelectedTile] = useState<TileT | null>(null);
 
@@ -116,9 +118,9 @@ export function OnlineBoard() {
 
     const derived = useMemo(() => {
         if (view === null || view === undefined || myUserId === null) return null;
-        const { state } = viewToEngineState(view);
+        const { state, boneyardCount } = viewToEngineState(view);
         const mySeatPosition = view.mySeatPosition;
-        if (mySeatPosition === null) return { state, opponentCounts: view.opponentCounts, isMyTurn: false, playable: [], moves: [], myPid: null };
+        if (mySeatPosition === null) return { state, opponentCounts: view.opponentCounts, boneyardCount, isMyTurn: false, playable: [], moves: [], myPid: null };
         const myPid = `seat-${mySeatPosition}` as unknown as PlayerId;
         const isMyTurn =
             view.phase === "in_round" && view.turnIndex === mySeatPosition;
@@ -128,17 +130,18 @@ export function OnlineBoard() {
             if (m.kind !== "play") continue;
             if (!playableSet.some((p) => equals(p, m.tile))) playableSet.push(m.tile);
         }
-        return { state, opponentCounts: view.opponentCounts, isMyTurn, playable: playableSet, moves, myPid };
+        return { state, opponentCounts: view.opponentCounts, boneyardCount, isMyTurn, playable: playableSet, moves, myPid };
     }, [view, myUserId]);
 
     if (view === null || view === undefined || myUserId === null || derived === null) {
         return <p className="p-4 text-center text-pr-ivory-dim">…</p>;
     }
 
-    const { state, opponentCounts, isMyTurn, playable, moves, myPid } = derived;
+    const { state, opponentCounts, boneyardCount, isMyTurn, playable, moves, myPid } = derived;
 
     const myHand = state.hands[`seat-${view.mySeatPosition}`] ?? [];
     const mustPass = isMyTurn && moves.length === 1 && moves[0]!.kind === "pass";
+    const mustDraw = isMyTurn && moves.length === 1 && moves[0]!.kind === "draw";
 
     const onTileSelect = (tile: TileT) => {
         if (!isMyTurn) return;
@@ -173,6 +176,11 @@ export function OnlineBoard() {
     const onPass = () => {
         if (!mustPass || gameId === null || myUserId === null) return;
         void passTurn({ gameId, userId: myUserId });
+    };
+
+    const onDraw = () => {
+        if (!mustDraw || gameId === null || myUserId === null) return;
+        void drawTile({ gameId, userId: myUserId });
     };
 
     const onDragEnd = (e: DragEndEvent) => {
@@ -260,11 +268,27 @@ export function OnlineBoard() {
                 <div className="flex items-center justify-between rounded-xl bg-pr-coal-soft/40 px-3 py-2 text-sm">
                     <span className="text-pr-ivory-dim">
                         {isMyTurn
-                            ? mustPass
-                                ? t("noLegalPlay")
-                                : t("yourTurn")
+                            ? mustDraw
+                                ? t("mustDraw")
+                                : mustPass
+                                  ? t("noLegalPlay")
+                                  : t("yourTurn")
                             : t("isPlaying", { name: currentName })}
+                        {boneyardCount > 0 && (
+                            <span className="ml-2 text-[10px] uppercase tracking-wider text-pr-coqui">
+                                {t("boneyard")} · {boneyardCount}
+                            </span>
+                        )}
                     </span>
+                    {mustDraw && (
+                        <button
+                            type="button"
+                            onClick={onDraw}
+                            className="rounded-lg bg-pr-coqui px-3 py-1 font-display text-sm text-pr-coal"
+                        >
+                            {t("draw")}
+                        </button>
+                    )}
                     {mustPass && (
                         <button
                             type="button"

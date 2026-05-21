@@ -116,15 +116,14 @@ async function assembleState(
         }),
     );
 
+    const boneyardRaw = (game.boneyard ?? []) as number[][];
+    const boneyard: Tile[] = boneyardRaw.map((t) => makeTile(t[0] ?? 0, t[1] ?? 0));
     return {
         phase: game.phase,
         seats: engineSeats,
         hands,
         chain: game.chain,
-        // BUG-002: boneyard not yet persisted in Convex schema. Stubbed to [] here, which means
-        // online 2p games temporarily behave as old "dead tiles" mode (pass instead of draw).
-        // Schema migration + persistState wiring lands in the follow-up.
-        boneyard: [],
+        boneyard,
         turnIndex: game.turnIndex,
         turnNumber: game.turnNumber,
         scores: game.scores,
@@ -151,6 +150,7 @@ async function persistState(
     await ctx.db.patch(gameId, {
         phase: newState.phase,
         chain: newState.chain,
+        boneyard: newState.boneyard.map((t) => [t[0], t[1]]),
         turnIndex: newState.turnIndex,
         turnNumber: newState.turnNumber,
         scores: newState.scores,
@@ -277,7 +277,8 @@ export const startMatch = mutation({
         const rng = serverRng();
         const shuffled = shuffle(allDoubleSixTiles(), rng);
 
-        // Deal 7 tiles to each seat in position order. Any remaining tiles are dead.
+        // Deal 7 tiles to each seat in position order. Leftover tiles form the boneyard
+        // (14 in 2p, 0 in 4p-partners).
         let openerPosition = 0;
         const doubleSix = makeTile(6, 6);
         let cursor = 0;
@@ -293,6 +294,7 @@ export const startMatch = mutation({
             });
             if (containsTile(tiles, doubleSix)) openerPosition = seat.position;
         }
+        const boneyardTiles = shuffled.slice(cursor);
 
         const now = Date.now();
         await ctx.db.patch(args.gameId, {
@@ -301,6 +303,7 @@ export const startMatch = mutation({
             turnIndex: openerPosition,
             turnNumber: 0,
             chain: { tiles: [], leftEnd: null, rightEnd: null },
+            boneyard: boneyardTiles.map((t) => [t[0], t[1]]),
             updatedAt: now,
         });
 
@@ -404,6 +407,44 @@ export const passTurn = mutation({
     },
 });
 
+// Draw a tile from the boneyard. The engine picks the head of state.boneyard; the client never
+// names which tile. Does NOT advance the turn — caller stays on turn until they can play or the
+// boneyard is empty and they must pass. No steal phase runs on a draw.
+export const drawTile = mutation({
+    args: { gameId: v.id("games"), userId: v.id("users") },
+    handler: async (ctx, args) => {
+        const game = await ctx.db.get(args.gameId);
+        if (game === null) throw new ConvexError("Game not found");
+        if (game.phase !== "in_round") throw new ConvexError("Game is not in round");
+
+        const seats = await ctx.db
+            .query("seats")
+            .withIndex("by_game", (q) => q.eq("gameId", args.gameId))
+            .collect();
+        const mySeat = seats.find((s) => s.userId === args.userId);
+        if (mySeat === undefined) throw new ConvexError("Not seated in this game");
+        if (mySeat.position !== game.turnIndex) throw new ConvexError("Not your turn");
+
+        const state = await assembleState(ctx, args.gameId);
+        if (state.boneyard.length === 0) throw new ConvexError("Boneyard is empty");
+        const playerId = seatPid(mySeat.position);
+        const move: Move = { kind: "draw", playerId, tile: state.boneyard[0]! };
+        const preHistoryLen = state.history.length;
+
+        let afterMove: GameState;
+        try {
+            afterMove = applyMove(state, move);
+        } catch (e) {
+            throw new ConvexError(e instanceof Error ? e.message : "Illegal draw");
+        }
+
+        // No steal phase on draw — turn hasn't advanced.
+        await persistState(ctx, args.gameId, preHistoryLen, afterMove, null);
+        await ctx.db.patch(mySeat._id, { lastSeenAt: Date.now(), autoPassCount: 0 });
+        // Do NOT schedule AI advance — the same seat is still on turn.
+    },
+});
+
 // Internal mutation: an AI seat takes its turn. Scheduled from playTile/passTurn/startMatch.
 export const aiAdvance = internalMutation({
     args: { gameId: v.id("games") },
@@ -425,6 +466,16 @@ export const aiAdvance = internalMutation({
         const preHistoryLen = state.history.length;
 
         const afterMove = applyMove(state, move);
+
+        // Draw doesn't advance the turn and doesn't trigger steal. Persist the hand+boneyard
+        // change and reschedule aiAdvance so the same AI seat acts again (play, draw, or pass).
+        if (move.kind === "draw") {
+            await persistState(ctx, args.gameId, preHistoryLen, afterMove, null);
+            await ctx.db.patch(currentSeat._id, { lastSeenAt: Date.now() });
+            await ctx.scheduler.runAfter(300, internal.games.aiAdvance, { gameId: args.gameId });
+            return;
+        }
+
         const { rng, lastDraw } = captureRng(serverRng());
         const afterSteal = resolveStealPhase(afterMove, rng);
         const rngDraw = lastDraw();
@@ -482,6 +533,7 @@ export const startNextRound = mutation({
                 });
             }
         }
+        const boneyardTiles = shuffled.slice(cursor);
 
         await clearHistory(ctx, args.gameId);
         await ctx.db.patch(args.gameId, {
@@ -490,6 +542,7 @@ export const startNextRound = mutation({
             turnIndex: openerPosition,
             turnNumber: 0,
             chain: { tiles: [], leftEnd: null, rightEnd: null },
+            boneyard: boneyardTiles.map((t) => [t[0], t[1]]),
             lastOutcome: null,
             updatedAt: Date.now(),
         });

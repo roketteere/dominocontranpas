@@ -64,6 +64,9 @@ export const myGameView = query({
             return { ...entry, stolenTile: null };
         });
 
+        // Boneyard count only — contents stay server-secret. Anti-cheat invariant.
+        const boneyardCount = Array.isArray(game.boneyard) ? game.boneyard.length : 0;
+
         return {
             gameId: game._id,
             roomCode: game.roomCode,
@@ -75,6 +78,7 @@ export const myGameView = query({
             scores: game.scores,
             options: game.options,
             chain: game.chain,
+            boneyardCount,
             lastOutcome: game.lastOutcome,
             seats: seats.map((s) => ({
                 position: s.position,

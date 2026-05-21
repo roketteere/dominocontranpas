@@ -62,6 +62,8 @@ export function Board() {
     }, [humanMoves]);
 
     const mustPass = isHumanTurn && humanMoves.length === 1 && humanMoves[0]!.kind === "pass";
+    const mustDraw = isHumanTurn && humanMoves.length === 1 && humanMoves[0]!.kind === "draw";
+    const boneyardCount = state?.boneyard.length ?? 0;
     const anyPlay = humanMoves.some((m) => m.kind === "play");
 
     // Shake hand when forced to pass.
@@ -159,6 +161,13 @@ export function Board() {
         submitHumanMove({ kind: "pass", playerId: humanPlayerId });
     };
 
+    const onDraw = (): void => {
+        if (!mustDraw || state === null || humanPlayerId === null) return;
+        const head = state.boneyard[0];
+        if (head === undefined) return;
+        submitHumanMove({ kind: "draw", playerId: humanPlayerId, tile: head });
+    };
+
     // DnD handlers — drag sets pendingTile for chain-end highlighting, drop submits.
     const onDragStart = ({ active }: DragStartEvent) => {
         if (!isHumanTurn) return;
@@ -189,6 +198,7 @@ export function Board() {
 
     const turnMessage = (() => {
         if (isHumanTurn) {
+            if (mustDraw) return t("mustDraw");
             if (mustPass) return t("noLegalPlay");
             if (step === "selected") return "";
             return lang === "es" ? "Arrastra o toca una ficha verde" : "Drag or tap a green tile";
@@ -242,7 +252,23 @@ export function Board() {
                     </div>
                 ) : (
                     <div className="flex items-center justify-between rounded-xl bg-pr-coal-soft/40 px-3 py-2 text-sm">
-                        <span className="text-pr-ivory-dim">{turnMessage}</span>
+                        <span className="text-pr-ivory-dim">
+                            {turnMessage}
+                            {boneyardCount > 0 && (
+                                <span className="ml-2 text-[10px] uppercase tracking-wider text-pr-coqui">
+                                    {t("boneyard")} · {boneyardCount}
+                                </span>
+                            )}
+                        </span>
+                        {mustDraw && (
+                            <button
+                                type="button"
+                                onClick={onDraw}
+                                className="rounded-lg bg-pr-coqui px-3 py-1 font-display text-sm text-pr-coal"
+                            >
+                                {t("draw")}
+                            </button>
+                        )}
                         {mustPass && (
                             <button
                                 type="button"

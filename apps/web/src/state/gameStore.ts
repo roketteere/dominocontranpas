@@ -105,12 +105,16 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
         const current = get().state;
         if (current === null) return;
         if (move.kind === "play") playClick();
+        else if (move.kind === "draw") playClick();
         else playPass();
         const afterMove = applyMove(current, move);
+        // Draw doesn't end the turn → no steal phase. lastActorPlayerId is unchanged and would
+        // mis-target the previous player if we ran shouldSteal here.
         const beforeStealHistoryLen = afterMove.history.length;
-        const afterSteal = current.options.enableTranpas
-            ? resolveStealPhase(afterMove, cryptoRng())
-            : afterMove;
+        const afterSteal =
+            move.kind !== "draw" && current.options.enableTranpas
+                ? resolveStealPhase(afterMove, cryptoRng())
+                : afterMove;
         if (afterSteal.history.length > beforeStealHistoryLen) {
             const last = afterSteal.history[afterSteal.history.length - 1];
             if (last !== undefined && last.kind === "steal") playSwoosh();
@@ -132,12 +136,14 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
             if (stateNow === null) return;
             const move = chooseAiMove(stateNow, info.actorId);
             if (move.kind === "play") playClick();
+            else if (move.kind === "draw") playClick();
             else playPass();
             const afterMove = applyMove(stateNow, move);
             const beforeStealHistoryLen = afterMove.history.length;
-            const afterSteal = stateNow.options.enableTranpas
-                ? resolveStealPhase(afterMove, cryptoRng())
-                : afterMove;
+            const afterSteal =
+                move.kind !== "draw" && stateNow.options.enableTranpas
+                    ? resolveStealPhase(afterMove, cryptoRng())
+                    : afterMove;
             if (afterSteal.history.length > beforeStealHistoryLen) {
                 const last = afterSteal.history[afterSteal.history.length - 1];
                 if (last !== undefined && last.kind === "steal") playSwoosh();

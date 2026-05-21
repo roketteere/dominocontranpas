@@ -125,6 +125,73 @@ if root cause is deployment drift).
 
 ---
 
+## BUG-002 — Convex layer wiring for boneyard draw rule `[done]`
+
+**Reported by:** Opus (follow-up to commit `dc5d3e7` — the boneyard
+engine landed pure, but the Convex layer stubbed `boneyard: []`)
+**Severity:** feature gap — solo had the draw rule, online did not
+**Surface:** entire online stack (schema, mutations, views, UI)
+
+**Scope (Opus, 2026-05-21):**
+
+- `apps/convex/convex/schema.ts:games` — add optional
+  `boneyard: v.optional(v.array(v.array(v.number())))`.
+- `apps/convex/convex/games.ts`:
+  - `startMatch` / `startNextRound` — persist `shuffled.slice(cursor)` as
+    boneyard on the games row.
+  - `assembleState` — deserialize game.boneyard (default `[]`) into the
+    engine `Tile[]` form.
+  - `persistState` — write boneyard on every patch.
+  - New `drawTile` mutation — validates turn + non-empty boneyard,
+    constructs `DrawMove` server-side using `state.boneyard[0]`, applies,
+    persists. **Skips `resolveStealPhase`** (no steal on draw) and does
+    **NOT** schedule AI advance (same seat is still on turn).
+  - `aiAdvance` — branch on `move.kind === "draw"`: skip steal phase,
+    reschedule `aiAdvance` 300ms later so the same AI seat re-evaluates
+    (play / draw again / pass).
+- `apps/convex/convex/views.ts:myGameView` — add `boneyardCount: number`
+  to the return shape. Server-secret boneyard contents are NEVER exposed;
+  only the count.
+- `apps/web/src/ui/online/OnlineBoard.tsx`:
+  - `viewToEngineState` consumes `view.boneyardCount`; populates engine
+    `state.boneyard` with N placeholder tiles so client-side
+    `validMoves` returns `[draw]` vs `[pass]` correctly. The DrawMove
+    the engine produces carries a placeholder tile; the server's
+    `drawTile` mutation ignores the client-side tile and uses the
+    real `state.boneyard[0]`.
+  - New `drawTile` mutation hook, `mustDraw` flag, `onDraw` handler,
+    Draw button in the action bar (pr-coqui accent).
+- `apps/web/src/ui/Board.tsx` (solo) — same `mustDraw` + Draw button
+  pattern; routes to `submitHumanMove({ kind: "draw", playerId, tile })`.
+- `apps/web/src/state/gameStore.ts` — both `submitHumanMove` and
+  `advanceAi` skip `resolveStealPhase` when `move.kind === "draw"`.
+  **Engine integration bug caught during this work:** without that
+  guard, `lastActorPlayerId` (stale from the prior real turn) would
+  mis-target the previous player on every draw.
+- `apps/web/src/i18n/strings.ts` — new keys `draw`, `mustDraw`,
+  `boneyard` (ES + EN). `Robar` / `Draw`.
+
+**Verification:**
+
+- `pnpm --filter web exec tsc --noEmit` ✅
+- `pnpm --filter convex exec tsc --noEmit` ✅
+- Engine vitest: 62/62 ✅
+- Manual smoke (Joel): Solo 1v1 with a deep round — after both players
+  have played all matching tiles, Draw button should appear (boneyard
+  has tiles) and clicking it should grow the hand by one. Online 2p
+  with two real players: same. Boneyard counter visible top of action bar.
+
+**Deploy step (Joel):** `pnpm --filter convex dev` against the live
+deployment to push the schema add + new `drawTile` mutation. Existing
+in-flight games will read `game.boneyard ?? []` (no migration needed
+for legacy rows; they just have an empty boneyard which is correct
+for the way they were originally dealt).
+
+**Done by:** Opus-direct (per the call: tightly-coupled across 5 files,
+not a fit for qwen single-file dispatch).
+
+---
+
 ## BUG-003 — Solo "1 vs 1 vs AI" actually spawns 3 AIs (4p) `[done]`
 
 **Reported by:** Joel (2026-05-21) — "randomly, when play 2 players you vs ai,

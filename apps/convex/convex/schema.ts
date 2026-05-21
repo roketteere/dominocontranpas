@@ -39,6 +39,11 @@ export default defineSchema({
         ),
         // Engine GameState fields (everything except per-player hands)
         chain: v.any(),
+        // Server-secret boneyard. Tiles not initially dealt, drawn from when a player is stuck.
+        // Empty in 4p-partners; 14 tiles in 2p. NEVER exposed to clients — views.ts surfaces only
+        // a length count (boneyardCount). Optional for backwards compat with rows created before
+        // this field existed; assembleState defaults missing → [].
+        boneyard: v.optional(v.array(v.array(v.number()))),
         turnIndex: v.number(),
         turnNumber: v.number(),
         round: v.number(),
