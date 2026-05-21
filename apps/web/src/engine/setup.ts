@@ -44,6 +44,24 @@ export function fourPartnerSeats(
     });
 }
 
+// Construct seats for the 2-player layout. Position 0 = team A, position 1 = team B (1v1).
+export function twoPlayerSeats(
+    names: readonly [string, string],
+    aiFlags: readonly [boolean, boolean],
+): readonly PlayerSeat[] {
+    return names.map((displayName, i): PlayerSeat => {
+        const position = i as SeatPosition;
+        const team: TeamId = position % 2 === 0 ? "A" : "B";
+        return {
+            playerId: `seat-${i}` as unknown as PlayerSeat["playerId"],
+            position,
+            team,
+            isAI: aiFlags[i] ?? false,
+            displayName,
+        };
+    });
+}
+
 // Construct an empty (pre-deal) GameState ready for the first round.
 export function initialGameState(
     seats: readonly PlayerSeat[],

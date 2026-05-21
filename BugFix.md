@@ -125,7 +125,109 @@ if root cause is deployment drift).
 
 ---
 
-## Template for new entries
+## BUG-003 — Solo "1 vs 1 vs AI" actually spawns 3 AIs (4p) `[done]`
+
+**Reported by:** Joel (2026-05-21) — "randomly, when play 2 players you vs ai,
+it can spawn 3 AI making it a 2 vs 2 instead of 1 vs 1"
+**Severity:** UX bug — entire solo mode runs the wrong shape
+**Surface:** MainMenu → "Solo vs IA" / "Solo vs AI" buttons
+
+**Trace / diagnosis (Opus, Sonnet Explore agent):**
+
+`apps/web/src/state/gameStore.ts:82-102` — `startSoloMatch` is
+**unconditionally** wired to a 4-seat partner layout:
+`fourPartnerSeats(["Tú","Lefty","Compa","Tía Yari"], [false,true,true,true])`
+plus `defaultGameOptions("solo-vs-ai", …)`. No branching on a mode flag.
+Joel expects the "Solo vs IA" button to be **1v1** (1 human + 1 AI).
+Confirmed by Explore agent that no other code path inserts AI seats
+(heartbeat just flips `isAI` on an existing row; online `addAiSeat` is
+gated by SeatPicker to positions [0,1] in 2p mode). The behavior is
+100% deterministic; "randomly" was casual phrasing.
+
+**Fix (qwen scope — pure engine + client state, no Convex):**
+
+1. **Add `twoPlayerSeats` helper** in
+   `apps/web/src/engine/setup.ts`. Mirrors `fourPartnerSeats` but
+   returns 2 seats: position 0 team A (human), position 1 team B (AI).
+   Signature:
+   ```ts
+   export function twoPlayerSeats(
+       names: readonly [string, string],
+       aiFlags: readonly [boolean, boolean],
+   ): readonly PlayerSeat[]
+   ```
+2. **Rewrite `startSoloMatch`** in
+   `apps/web/src/state/gameStore.ts:82` to use `twoPlayerSeats(["Tú","Tito"], [false,true])`
+   and `defaultGameOptions("2p", opts?.enableTranpas ?? true)`. Keep
+   the rest of the function (initialGameState → dealRound → set state
+   → kick AI if opener is AI) intact.
+3. Import `twoPlayerSeats` in `gameStore.ts`. Remove the
+   `fourPartnerSeats` import if no longer used (verify with grep).
+
+The mode literal becomes `"2p"`, which `dealRound` already routes
+correctly (`isTwoPlayer = mode === "2p"` → 7 each + 14 boneyard).
+With the boneyard rule shipped in commit `dc5d3e7`, the solo 1v1
+game now also exercises the draw mechanic.
+
+**Acceptance criteria (qwen self-checks before flipping `[done]`):**
+
+- [ ] `setup.ts` exports a new `twoPlayerSeats(names, aiFlags)` that
+      returns exactly 2 `PlayerSeat`s with positions 0 (team A) and 1
+      (team B), `displayName` from `names`, `isAI` from `aiFlags`,
+      `playerId = "seat-0"` / `"seat-1"`. Same shape pattern as
+      `fourPartnerSeats`.
+- [ ] `startSoloMatch` in `gameStore.ts` builds a 2-seat game using
+      `twoPlayerSeats(["Tú","Tito"], [false,true])` and mode `"2p"`.
+      AI name "Tito" matches the existing PR AI naming
+      (`AI_NAMES[1] === "Tito"` in lobbies.ts).
+- [ ] After dealRound, `state.seats.length === 2`, `state.hands` has
+      exactly 2 entries with 7 tiles each, `state.boneyard.length === 14`.
+- [ ] `pnpm --filter web exec tsc --noEmit` passes.
+- [ ] `pnpm --filter web exec vitest run engine.test` still passes
+      62/62 (no engine surface changed).
+- [ ] No new imports beyond `twoPlayerSeats` in gameStore.ts. Do NOT
+      add a UI option for "Solo 4p vs 3 AIs" — Joel explicitly wants
+      1v1; leave the MainMenu buttons as-is.
+
+**Out of scope:** anything Convex / online (mode option lists, schema,
+addAiSeat bounds guard). If a defensive bounds check on `addAiSeat`
+would be valuable, file it as a separate entry — don't bundle.
+
+**Assigned to:** qwen (failed self-check); fallback Opus-direct.
+
+**Resolution (Opus, 2026-05-21):**
+
+- **Diagnosis confirmed by Sonnet Explore agent:** the only AI-seat
+  insertion path in the codebase is `lobbies.ts:addAiSeat`, which is
+  gated by SeatPicker UI to `positions=[0,1]` in 2p mode. There is no
+  intermittent / racy path. The bug is `startSoloMatch` hardcoded to
+  4 seats. "Randomly" was casual phrasing for "deterministically every
+  time".
+- **Code fix (Opus-direct, qwen failed):**
+  - `apps/web/src/engine/setup.ts` — added `twoPlayerSeats(names, aiFlags)` between
+    `fourPartnerSeats` and `initialGameState`, returning 2 PlayerSeats
+    (pos 0 team A, pos 1 team B).
+  - `apps/web/src/state/gameStore.ts` — import swap
+    `fourPartnerSeats → twoPlayerSeats`; `startSoloMatch` now builds
+    `twoPlayerSeats(["Tú","Tito"], [false,true])` with options mode
+    `"2p"`. AI name `Tito` matches `AI_NAMES[1]` in lobbies.ts.
+- **Verification:** `pnpm --filter web exec tsc --noEmit` ✅,
+  62/62 engine tests pass. Manual smoke: Main Menu → "Solo vs IA · Con
+  Tranpas" → game loads with 2 seats, host position 0 + Tito position 1.
+  With boneyard rule already shipped, the 14 leftover tiles are now
+  drawable.
+- **qwen dispatch failure (BUG-003-brief.md → bug003.out):**
+  qwen2.5-coder:7b emitted gameStore.ts content under the
+  `===FILE: apps/web/src/engine/setup.ts===` header (wrong file),
+  wrapped output in markdown ```typescript fences (banned by
+  Expectations.md), did NOT apply the requested import swap or
+  startSoloMatch rewrite, and produced empty content under the
+  second `===FILE:` delimiter. Single dispatch (eval_count=1813,
+  duration_ms=158078) — not worth re-dispatching given the trivial
+  scope. Opus applied the two edits directly.
+- **Lesson captured in Expectations.md:** added a brief-design note
+  that multi-file dispatches with delimited output are unreliable for
+  qwen2.5-coder:7b at this scope; prefer single-file dispatches.
 
 Copy-paste this block when filing a new bug or task. Renumber the ID.
 

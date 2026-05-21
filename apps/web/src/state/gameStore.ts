@@ -39,8 +39,8 @@ import {
     cryptoRng,
     dealRound,
     defaultGameOptions,
-    fourPartnerSeats,
     initialGameState,
+    twoPlayerSeats,
 } from "../engine/setup.js";
 import { chooseAiMove } from "../ai/heuristicAi.js";
 
@@ -80,11 +80,11 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     lang: loadLang(),
 
     startSoloMatch: (opts?: { enableTranpas?: boolean }) => {
-        const seats = fourPartnerSeats(
-            ["Tú", "Lefty", "Compa", "Tía Yari"],
-            [false, true, true, true],
+        const seats = twoPlayerSeats(
+            ["Tú", "Tito"],
+            [false, true],
         );
-        const options = defaultGameOptions("solo-vs-ai", opts?.enableTranpas ?? true);
+        const options = defaultGameOptions("2p", opts?.enableTranpas ?? true);
         const base = initialGameState(seats, options);
         const dealt = dealRound(base, cryptoRng(), null);
         const humanSeat = seats[0]!;

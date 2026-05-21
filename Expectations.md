@@ -130,6 +130,30 @@ it says so explicitly.
       passes the acceptance criteria is better than a refactor that
       "improves" surrounding code.
 
+## Brief design — what works vs what fails
+
+These rules govern how Opus *writes* briefs for qwen, not what qwen
+outputs. Pinned after observed failures.
+
+- [ ] **Single-file dispatches preferred.** A brief asking for ONE
+      complete file produced clean output on BUG-001 (696 tokens,
+      first-shot clean). A brief asking for TWO files separated by a
+      `===FILE: <path>===` delimiter (BUG-003) failed: qwen mixed up
+      which file goes under which delimiter AND wrapped output in
+      markdown fences despite explicit "no fences" instruction. If
+      a task touches multiple files, prefer N single-file dispatches
+      over one multi-file dispatch.
+- [ ] **Don't embed the full source of an unchanging file.** If
+      the brief says "everything else byte-identical to source", qwen
+      may copy the embedded source verbatim and never apply the
+      requested surgical edits. The brief should embed source only for
+      files being edited, and should describe the edit as the
+      smallest possible diff scope.
+- [ ] **Watch for stripped markdown fences.** The dispatch script
+      auto-strips leading/trailing ` ``` ` fences. Inner fences
+      (mid-file) are NOT stripped and will land in the written file as
+      garbage. Briefs must reinforce "no fences anywhere".
+
 ## How this file gets updated
 
 Opus appends new rules here whenever a qwen dispatch reveals a class
