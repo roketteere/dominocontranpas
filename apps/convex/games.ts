@@ -43,7 +43,11 @@ function serializeHand(hand: Hand): number[][] {
     return hand.map((t) => [t[0], t[1]]);
 }
 
-// Server-side RNG. Convex's V8 runtime exposes Web Crypto globally.
+// Server-side RNG. Convex's V8 runtime exposes Web Crypto globally; declare it locally so
+// TypeScript can see it without pulling in the DOM lib.
+declare const crypto: {
+    getRandomValues<T extends ArrayBufferView>(array: T): T;
+};
 function serverRng(): Rng {
     return () => {
         const buf = new Uint32Array(1);
@@ -279,7 +283,7 @@ export const startMatch = mutation({
             await ctx.db.insert("playerHands", {
                 gameId: args.gameId,
                 seatPosition: seat.position,
-                userId: seat.userId,
+                ...(seat.userId !== undefined && { userId: seat.userId }),
                 tiles: serializeHand(tiles),
             });
             if (containsTile(tiles, doubleSix)) openerPosition = seat.position;
@@ -468,7 +472,7 @@ export const startNextRound = mutation({
                 await ctx.db.insert("playerHands", {
                     gameId: args.gameId,
                     seatPosition: seat.position,
-                    userId: seat.userId,
+                    ...(seat.userId !== undefined && { userId: seat.userId }),
                     tiles: serializeHand(tiles),
                 });
             }

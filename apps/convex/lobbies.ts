@@ -52,6 +52,7 @@ export const createGame = mutation({
                 chuchazoBonus: 25,
                 mode: args.mode,
             },
+            lastOutcome: null,
             createdAt: now,
             updatedAt: now,
         });
@@ -136,7 +137,7 @@ export const addAiSeat = mutation({
         await ctx.db.insert("seats", {
             gameId: args.gameId,
             position: args.position,
-            userId: undefined,
+            // userId omitted intentionally — AI seats have no owning user
             team: args.position % 2 === 0 ? "A" : "B",
             isAI: true,
             displayName: AI_NAMES[args.position] ?? "Bot",

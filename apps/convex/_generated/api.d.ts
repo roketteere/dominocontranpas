@@ -1,6 +1,61 @@
-// STUB — overwritten by `pnpm --filter convex dev` on first run with typed function refs.
-// Typed as `any` here so the web build resolves before real codegen has happened. The
-// `@ts-expect-error` comments on import sites become no-ops; we keep them for documentation.
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export declare const api: any;
-export declare const internal: any;
+/* eslint-disable */
+/**
+ * Generated `api` utility.
+ *
+ * THIS CODE IS AUTOMATICALLY GENERATED.
+ *
+ * To regenerate, run `npx convex dev`.
+ * @module
+ */
+
+import type * as crons from "../crons.js";
+import type * as games from "../games.js";
+import type * as health from "../health.js";
+import type * as heartbeat from "../heartbeat.js";
+import type * as lobbies from "../lobbies.js";
+import type * as users from "../users.js";
+import type * as views from "../views.js";
+
+import type {
+  ApiFromModules,
+  FilterApi,
+  FunctionReference,
+} from "convex/server";
+
+declare const fullApi: ApiFromModules<{
+  crons: typeof crons;
+  games: typeof games;
+  health: typeof health;
+  heartbeat: typeof heartbeat;
+  lobbies: typeof lobbies;
+  users: typeof users;
+  views: typeof views;
+}>;
+
+/**
+ * A utility for referencing Convex functions in your app's public API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = api.myModule.myFunction;
+ * ```
+ */
+export declare const api: FilterApi<
+  typeof fullApi,
+  FunctionReference<any, "public">
+>;
+
+/**
+ * A utility for referencing Convex functions in your app's internal API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = internal.myModule.myFunction;
+ * ```
+ */
+export declare const internal: FilterApi<
+  typeof fullApi,
+  FunctionReference<any, "internal">
+>;
+
+export declare const components: {};

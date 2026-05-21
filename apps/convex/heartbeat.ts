@@ -36,7 +36,7 @@ export const enforceAutoPass = internalMutation({
             const seat = await ctx.db
                 .query("seats")
                 .withIndex("by_game_position", (q) =>
-                    q.eq("gameId", game._id).eq("position", game.turnIndex),
+                    q.eq("gameId", game._id).eq("position", game.turnIndex as 0 | 1 | 2 | 3),
                 )
                 .unique();
             if (seat === null) continue;

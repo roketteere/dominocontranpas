@@ -1,7 +1,23 @@
-// STUB — overwritten by `pnpm --filter convex dev` on first run.
-// Exists only so the web bundle can resolve `@convex/_generated/api.js` before the real
-// codegen has happened. Calls through `api.*` / `internal.*` will look up functions by name
-// at runtime against the actual deployment.
-import { anyApi } from "convex/server";
+/* eslint-disable */
+/**
+ * Generated `api` utility.
+ *
+ * THIS CODE IS AUTOMATICALLY GENERATED.
+ *
+ * To regenerate, run `npx convex dev`.
+ * @module
+ */
+
+import { anyApi, componentsGeneric } from "convex/server";
+
+/**
+ * A utility for referencing Convex functions in your app's API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = api.myModule.myFunction;
+ * ```
+ */
 export const api = anyApi;
 export const internal = anyApi;
+export const components = componentsGeneric();
