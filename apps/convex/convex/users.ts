@@ -7,16 +7,23 @@ export const createOrGetUser = mutation({
     args: {
         deviceId: v.string(),
         displayName: v.string(),
+        avatar: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         const existing = await ctx.db
             .query("users")
             .withIndex("by_deviceId", (q) => q.eq("deviceId", args.deviceId))
             .unique();
-        if (existing !== null) return existing._id;
+        if (existing !== null) {
+            if (args.avatar !== undefined && existing.avatar !== args.avatar) {
+                await ctx.db.patch(existing._id, { avatar: args.avatar });
+            }
+            return existing._id;
+        }
         return await ctx.db.insert("users", {
             deviceId: args.deviceId,
             displayName: args.displayName,
+            ...(args.avatar !== undefined && { avatar: args.avatar }),
             createdAt: Date.now(),
         });
     },

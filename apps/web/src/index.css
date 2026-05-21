@@ -33,6 +33,16 @@ body {
     min-height: 100vh;
 }
 
+/* Shake animation for "must pass" feedback — fired once when no playable tiles. */
+@keyframes dct-shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+    20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+.dct-shake {
+    animation: dct-shake 0.5s ease-in-out;
+}
+
 /* Subtle wood-grain top/bottom edges for the "table" feel. */
 body::before,
 body::after {

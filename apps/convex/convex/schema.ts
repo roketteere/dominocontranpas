@@ -9,6 +9,9 @@ export default defineSchema({
         deviceId: v.string(),
         displayName: v.string(),
         avatarUrl: v.optional(v.string()),
+        // Avatar is one of the preset ID strings from apps/web/src/ui/avatars.ts (e.g. "coqui").
+        // Optional for backwards compat with rows created before this field existed.
+        avatar: v.optional(v.string()),
         createdAt: v.number(),
     }).index("by_deviceId", ["deviceId"]),
 
@@ -55,6 +58,9 @@ export default defineSchema({
         team: v.union(v.literal("A"), v.literal("B")),
         isAI: v.boolean(),
         displayName: v.string(),
+        // Snapshot of the user's avatar at join time (so it follows the seat even if the user
+        // later changes their default).
+        avatar: v.optional(v.string()),
         lastSeenAt: v.number(),
         autoPassCount: v.number(),
     })

@@ -1,22 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-    DndContext,
-    PointerSensor,
-    TouchSensor,
-    useSensor,
-    useSensors,
-    type DragEndEvent,
-} from "@dnd-kit/core";
+import { useEffect, useMemo, useState } from "react";
 import { useGameStore } from "../state/gameStore.js";
-import type { PlayMove, Side, Tile as TileT } from "../engine/types.js";
+import type { PlayMove, Side, Tile as TileT, Pip } from "../engine/types.js";
 import { validMoves } from "../engine/moves.js";
-import { equals, tileFromString, tileToString } from "../engine/tiles.js";
+import { equals } from "../engine/tiles.js";
 import { Chain } from "./Chain.js";
 import { Hand } from "./Hand.js";
 import { OpponentRow } from "./OpponentRow.js";
 import { ScoreBar } from "./ScoreBar.js";
 import type { Rotation } from "./Tile.js";
 import { useT } from "../i18n/index.js";
+import { PlacementModal } from "./PlacementModal.js";
+
+type PlacementStep = "idle" | "picking-pip" | "picking-side";
 
 export function Board() {
     const state = useGameStore((s) => s.state);
@@ -25,59 +20,10 @@ export function Board() {
     const aiThinking = useGameStore((s) => s.aiThinking);
     const t = useT();
 
-    const [selectedTile, setSelectedTile] = useState<TileT | null>(null);
-    const [rotations, setRotations] = useState<ReadonlyMap<string, Rotation>>(new Map());
-
-    // Activation constraints so taps are clicks (not accidental drags). Pointer (mouse) needs an
-    // 8px move to start dragging; touch needs a 180ms hold so taps don't fire drags.
-    const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-        useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
-    );
-
-    const rotateBy = useCallback((tile: TileT, delta: 90 | -90) => {
-        setRotations((prev) => {
-            const next = new Map(prev);
-            const id = tileToString(tile);
-            const current = next.get(id) ?? 0;
-            // Normalize to 0/90/180/270 in [0, 360).
-            const raw = (current + delta + 360) % 360;
-            const normalized = raw as Rotation;
-            next.set(id, normalized);
-            return next;
-        });
-    }, []);
-
-    // Mouse wheel: scroll up = rotate counter-clockwise (left, -90°); scroll down = clockwise (+90°).
-    // Throttled to ~one step per 200ms so a trackpad swipe doesn't spin through every angle.
-    const lastWheelRef = useRef(0);
-    const onWheelRotate = useCallback(
-        (tile: TileT, deltaY: number) => {
-            if (Math.abs(deltaY) < 4) return;
-            const now = Date.now();
-            if (now - lastWheelRef.current < 200) return;
-            lastWheelRef.current = now;
-            setSelectedTile(tile);
-            rotateBy(tile, deltaY < 0 ? -90 : 90);
-        },
-        [rotateBy],
-    );
-
-    useEffect(() => {
-        const onKey = (e: KeyboardEvent) => {
-            if (e.key !== "r" && e.key !== "R") return;
-            if (selectedTile === null) return;
-            // Ignore when typing in an input/textarea (none today, but be safe).
-            const target = e.target as HTMLElement | null;
-            const tag = target?.tagName ?? "";
-            if (tag === "INPUT" || tag === "TEXTAREA") return;
-            e.preventDefault();
-            // R rotates clockwise; Shift+R counter-clockwise.
-            rotateBy(selectedTile, e.shiftKey ? -90 : 90);
-        };
-        window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
-    }, [selectedTile, rotateBy]);
+    const [step, setStep] = useState<PlacementStep>("idle");
+    const [pendingTile, setPendingTile] = useState<TileT | null>(null);
+    const [pickedPipIdx, setPickedPipIdx] = useState<0 | 1 | null>(null);
+    const [shaking, setShaking] = useState(false);
 
     const isHumanTurn = useMemo(() => {
         if (state === null || humanPlayerId === null) return false;
@@ -99,59 +45,110 @@ export function Board() {
         return tiles;
     }, [humanMoves]);
 
-    const sidesForSelected = useMemo<Side[]>(() => {
-        if (selectedTile === null) return [];
-        return humanMoves
-            .filter((m): m is PlayMove => m.kind === "play" && equals(m.tile, selectedTile))
-            .map((m) => m.side);
-    }, [humanMoves, selectedTile]);
+    const mustPass = isHumanTurn && humanMoves.length === 1 && humanMoves[0]!.kind === "pass";
+
+    // Shake the hand once when the player is forced to pass.
+    useEffect(() => {
+        if (!isHumanTurn || !mustPass) return;
+        setShaking(true);
+        const id = setTimeout(() => setShaking(false), 600);
+        return () => clearTimeout(id);
+    }, [isHumanTurn, mustPass]);
+
+    // If the turn changes away from the human while a placement is in progress, abort it.
+    useEffect(() => {
+        if (!isHumanTurn) {
+            setStep("idle");
+            setPendingTile(null);
+            setPickedPipIdx(null);
+        }
+    }, [isHumanTurn]);
 
     if (state === null || humanPlayerId === null) return null;
 
     const humanHand = state.hands[humanPlayerId as unknown as string] ?? [];
-    const mustPass = isHumanTurn && humanMoves.length === 1 && humanMoves[0]!.kind === "pass";
 
-    const onTileSelect = (tile: TileT): void => {
-        if (!isHumanTurn) return;
-        // Tapping a tile selects it; tapping the same tile again deselects.
-        // Drag or tap a drop zone to play. No auto-play on tap so the user has time to rotate.
-        setSelectedTile((prev) => (prev !== null && equals(prev, tile) ? null : tile));
-    };
-
-    const onRotateSelected = (): void => {
-        if (selectedTile === null) return;
-        rotateBy(selectedTile, 90);
-    };
-
-    const playOnSide = (side: Side): void => {
-        if (selectedTile === null) return;
-        const move = humanMoves.find(
-            (m): m is PlayMove => m.kind === "play" && equals(m.tile, selectedTile) && m.side === side,
-        );
-        if (move === undefined) return;
-        submitHumanMove(move);
-        setSelectedTile(null);
-    };
-
-    const onDragEnd = (e: DragEndEvent): void => {
-        const tileId = String(e.active.id);
-        const overId = e.over?.id;
-        if (overId === undefined) return;
-        const tile = (() => {
-            try {
-                return tileFromString(tileId);
-            } catch {
-                return null;
+    // Pips on `pendingTile` that match at least one chain end.
+    const validPipsForPending: ReadonlySet<Pip> = (() => {
+        if (pendingTile === null) return new Set();
+        const out = new Set<Pip>();
+        const ends: (Pip | null)[] = [state.chain.leftEnd, state.chain.rightEnd];
+        for (const end of ends) {
+            if (end === null) {
+                // Empty chain: any pip is valid as an opening tile.
+                out.add(pendingTile[0]);
+                out.add(pendingTile[1]);
+                break;
             }
-        })();
-        if (tile === null) return;
-        const side: Side = overId === "drop-left" ? "left" : "right";
+            if (pendingTile[0] === end) out.add(pendingTile[0]);
+            if (pendingTile[1] === end) out.add(pendingTile[1]);
+        }
+        return out;
+    })();
+
+    // Once a pip is picked, which side(s) can it play on?
+    const sidesForPickedPip: Side[] = (() => {
+        if (pendingTile === null || pickedPipIdx === null) return [];
+        const pickedPip = pendingTile[pickedPipIdx];
+        const sides: Side[] = [];
+        const leftEnd = state.chain.leftEnd;
+        const rightEnd = state.chain.rightEnd;
+        if (leftEnd === null || leftEnd === pickedPip) sides.push("left");
+        if (rightEnd === null || rightEnd === pickedPip) {
+            // For the empty-chain opener leftEnd is null AND rightEnd is null; we already added
+            // "left" above, so guard against duplicating.
+            if (!sides.includes("right")) sides.push("right");
+        }
+        return sides;
+    })();
+
+    const onTileTap = (tile: TileT): void => {
+        if (!isHumanTurn) return;
+        const isPlayable = playableTiles.some((p) => equals(p, tile));
+        if (!isPlayable) {
+            // Tapping an unplayable tile gives a tiny shake to remind them.
+            setShaking(true);
+            setTimeout(() => setShaking(false), 400);
+            return;
+        }
+        setPendingTile(tile);
+        setPickedPipIdx(null);
+        setStep("picking-pip");
+    };
+
+    const onPickPip = (idx: 0 | 1): void => {
+        setPickedPipIdx(idx);
+        setStep("picking-side");
+    };
+
+    const onCancelPlacement = (): void => {
+        setStep("idle");
+        setPendingTile(null);
+        setPickedPipIdx(null);
+    };
+
+    const onPickSide = (side: Side): void => {
+        if (pendingTile === null || pickedPipIdx === null) return;
+        if (!sidesForPickedPip.includes(side)) {
+            // Mismatch — that side doesn't accept this pip. Shake for feedback.
+            setShaking(true);
+            setTimeout(() => setShaking(false), 400);
+            return;
+        }
+        // Validate against the engine's actual move list (belt + suspenders).
         const move = humanMoves.find(
-            (m): m is PlayMove => m.kind === "play" && equals(m.tile, tile) && m.side === side,
+            (m): m is PlayMove =>
+                m.kind === "play" && equals(m.tile, pendingTile) && m.side === side,
         );
-        if (move === undefined) return;
+        if (move === undefined) {
+            setShaking(true);
+            setTimeout(() => setShaking(false), 400);
+            return;
+        }
         submitHumanMove(move);
-        setSelectedTile(null);
+        setStep("idle");
+        setPendingTile(null);
+        setPickedPipIdx(null);
     };
 
     const onPass = (): void => {
@@ -159,76 +156,92 @@ export function Board() {
         submitHumanMove({ kind: "pass", playerId: humanPlayerId });
     };
 
-    const canDropLeft = sidesForSelected.includes("left") || sidesForSelected.length === 0;
-    const canDropRight = sidesForSelected.includes("right") || sidesForSelected.length === 0;
-    // When a tile is selected, only show the legal drop zones. Otherwise enable both if there's any play.
-    const anyPlay = humanMoves.some((m) => m.kind === "play");
-    const canLeft = selectedTile !== null ? sidesForSelected.includes("left") : anyPlay && canDropLeft;
-    const canRight = selectedTile !== null ? sidesForSelected.includes("right") : anyPlay && canDropRight;
+    // When a pip has been picked, rotate the pending tile so the picked pip is visually at the
+    // top. tile[0] is at the top by default (vertical orientation). Picking tile[1] needs a
+    // 180° rotation.
+    const rotationsForHand: ReadonlyMap<string, Rotation> = (() => {
+        if (pendingTile === null || pickedPipIdx !== 1) return new Map();
+        const m = new Map<string, Rotation>();
+        // We don't import tileToString here — but Hand keys by it. Instead pass a rotation
+        // map keyed by the same convention. Use inline string format "a|b".
+        m.set(`${pendingTile[0]}|${pendingTile[1]}`, 180);
+        return m;
+    })();
 
-    // Map seat positions to visual table positions. Turn order is counter-clockwise (PR
-    // convention) with seat 0 = south (me). So seat 1 is west (visual left), seat 2 is north
-    // (across / my partner), seat 3 is east (visual right).
+    // Counter-clockwise turn order: seat 0 = south (me), seat 1 = west, seat 2 = north, seat 3 = east.
     const seatByPosition = (pos: number) => state.seats.find((s) => s.position === pos);
-    const leftSeat = seatByPosition(1);
-    const topSeat = seatByPosition(2);
-    const rightSeat = seatByPosition(3);
-    const renderOpponent = (
-        seat: typeof state.seats[number] | undefined,
-        placement: "top" | "left" | "right",
-    ) => {
-        if (seat === undefined) return null;
+    const orderedOpponents = [seatByPosition(1), seatByPosition(2), seatByPosition(3)].filter(
+        (s): s is NonNullable<typeof s> => s !== undefined,
+    );
+    const renderOpponent = (seat: (typeof state.seats)[number]) => {
         const hand = state.hands[seat.playerId as unknown as string] ?? [];
         const isCurrent = state.seats[state.turnIndex]?.playerId === seat.playerId;
         return (
             <OpponentRow
+                key={seat.position}
                 seat={seat}
                 handCount={hand.length}
                 isCurrentTurn={isCurrent}
                 isAiThinking={isCurrent && aiThinking}
-                placement={placement}
+                placement="row"
             />
         );
     };
 
+    // Compute which chain ends can receive a drop in the current step.
+    const anyPlay = humanMoves.some((m) => m.kind === "play");
+    const canLeft =
+        step === "picking-side"
+            ? sidesForPickedPip.includes("left")
+            : isHumanTurn && anyPlay;
+    const canRight =
+        step === "picking-side"
+            ? sidesForPickedPip.includes("right")
+            : isHumanTurn && anyPlay;
+
+    const turnMessage = (() => {
+        if (isHumanTurn) {
+            if (mustPass) return t("noLegalPlay");
+            if (step === "picking-side") {
+                return useGameStore.getState().lang === "es"
+                    ? "Toca un extremo de la cadena"
+                    : "Tap a chain end";
+            }
+            return t("yourTurn");
+        }
+        if (aiThinking) {
+            return t("aiThinking", {
+                name: state.seats[state.turnIndex]?.displayName ?? "?",
+            });
+        }
+        return t("isPlaying", {
+            name: state.seats[state.turnIndex]?.displayName ?? "?",
+        });
+    })();
+
     return (
-        <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+        <>
             <div className="flex flex-1 flex-col gap-3">
                 <ScoreBar state={state} />
 
-                {/* Partner across the table */}
-                <div>{renderOpponent(topSeat, "top")}</div>
-
-                {/* Left opponent | Chain (center) | Right opponent */}
-                <div className="my-1 grid flex-1 grid-cols-[auto_1fr_auto] items-stretch gap-2">
-                    <div>{renderOpponent(leftSeat, "left")}</div>
-                    <div className="min-w-0">
-                        <Chain
-                            chain={state.chain}
-                            canDropLeft={isHumanTurn && canLeft}
-                            canDropRight={isHumanTurn && canRight}
-                            onTapLeft={() => playOnSide("left")}
-                            onTapRight={() => playOnSide("right")}
-                        />
-                    </div>
-                    <div>{renderOpponent(rightSeat, "right")}</div>
+                {/* Opponents as compact avatar chips. */}
+                <div className="flex items-start justify-around gap-2">
+                    {orderedOpponents.map((s) => renderOpponent(s))}
                 </div>
 
-                {/* Turn banner */}
+                {/* Chain takes the full available width. */}
+                <div className="my-1 flex-1">
+                    <Chain
+                        chain={state.chain}
+                        canDropLeft={canLeft}
+                        canDropRight={canRight}
+                        onTapLeft={() => onPickSide("left")}
+                        onTapRight={() => onPickSide("right")}
+                    />
+                </div>
+
                 <div className="flex items-center justify-between rounded-xl bg-pr-coal-soft/40 px-3 py-2 text-sm">
-                    <span className="text-pr-ivory-dim">
-                        {isHumanTurn
-                            ? mustPass
-                                ? t("noLegalPlay")
-                                : t("yourTurn")
-                            : aiThinking
-                              ? t("aiThinking", {
-                                    name: state.seats[state.turnIndex]?.displayName ?? "?",
-                                })
-                              : t("isPlaying", {
-                                    name: state.seats[state.turnIndex]?.displayName ?? "?",
-                                })}
-                    </span>
+                    <span className="text-pr-ivory-dim">{turnMessage}</span>
                     {mustPass && (
                         <button
                             type="button"
@@ -238,20 +251,44 @@ export function Board() {
                             {t("pass")}
                         </button>
                     )}
+                    {step === "picking-side" && !mustPass && (
+                        <button
+                            type="button"
+                            onClick={onCancelPlacement}
+                            className="rounded-lg border border-pr-coal-soft bg-pr-coal-soft/60 px-3 py-1 font-display text-sm text-pr-ivory"
+                        >
+                            {t("language") === "Idioma" ? "Cancelar" : "Cancel"}
+                        </button>
+                    )}
                 </div>
 
-                {/* Hand */}
-                <Hand
-                    hand={humanHand}
-                    playable={playableTiles}
-                    selectedTile={selectedTile}
-                    rotations={rotations}
-                    isHumanTurn={isHumanTurn}
-                    onSelect={onTileSelect}
-                    onRotate={onRotateSelected}
-                    onWheelRotate={onWheelRotate}
-                />
+                {/* Hand. Shakes briefly on forced pass or tap-of-red-tile. */}
+                <div className={shaking ? "dct-shake" : ""}>
+                    <Hand
+                        hand={humanHand}
+                        playable={playableTiles}
+                        selectedTile={step === "picking-side" ? pendingTile : null}
+                        rotations={rotationsForHand}
+                        isHumanTurn={isHumanTurn}
+                        onSelect={onTileTap}
+                        onRotate={() => {
+                            /* rotate-button is unused in the guided flow */
+                        }}
+                        onWheelRotate={() => {
+                            /* wheel rotate disabled in guided flow */
+                        }}
+                    />
+                </div>
             </div>
-        </DndContext>
+
+            {step === "picking-pip" && pendingTile !== null && (
+                <PlacementModal
+                    tile={pendingTile}
+                    validPips={validPipsForPending}
+                    onPickPip={onPickPip}
+                    onCancel={onCancelPlacement}
+                />
+            )}
+        </>
     );
 }

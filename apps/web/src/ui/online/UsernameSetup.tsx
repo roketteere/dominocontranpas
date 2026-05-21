@@ -3,15 +3,19 @@ import { useMutation } from "convex/react";
 // @ts-ignore — stub overwritten by `convex dev`
 import { api } from "@convex/_generated/api.js";
 import { useIdentityStore } from "../../state/identityStore.js";
-import { useT } from "../../i18n/index.js";
+import { useGameStore } from "../../state/gameStore.js";
+import { AVATARS, type AvatarId } from "../avatars.js";
 
-// First-time setup: ask for a display name and register a user row keyed by the deviceId.
+// First-time setup: ask for a display name + avatar, register a user row keyed by deviceId.
 export function UsernameSetup({ onDone }: { onDone: () => void }) {
-    const t = useT();
+    const lang = useGameStore((s) => s.lang);
     const deviceId = useIdentityStore((s) => s.deviceId);
     const setDisplayName = useIdentityStore((s) => s.setDisplayName);
+    const storeAvatar = useIdentityStore((s) => s.avatar);
+    const setAvatar = useIdentityStore((s) => s.setAvatar);
     const createOrGetUser = useMutation(api.users.createOrGetUser);
     const [name, setName] = useState("");
+    const [avatar, setLocalAvatar] = useState<AvatarId>(storeAvatar);
     const [submitting, setSubmitting] = useState(false);
 
     const submit = async () => {
@@ -19,8 +23,9 @@ export function UsernameSetup({ onDone }: { onDone: () => void }) {
         if (trimmed.length < 1 || trimmed.length > 24) return;
         setSubmitting(true);
         try {
-            await createOrGetUser({ deviceId, displayName: trimmed });
+            await createOrGetUser({ deviceId, displayName: trimmed, avatar });
             setDisplayName(trimmed);
+            setAvatar(avatar);
             onDone();
         } finally {
             setSubmitting(false);
@@ -28,15 +33,11 @@ export function UsernameSetup({ onDone }: { onDone: () => void }) {
     };
 
     return (
-        <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
             <h2 className="font-display text-3xl text-pr-ivory">
-                {t("language") === "Idioma" ? "Tu nombre" : "Your name"}
+                {lang === "es" ? "Tu jugador" : "Your player"}
             </h2>
-            <p className="text-sm text-pr-ivory-dim">
-                {t("language") === "Idioma"
-                    ? "Cómo te van a ver los otros jugadores."
-                    : "How other players see you."}
-            </p>
+
             <input
                 type="text"
                 value={name}
@@ -45,17 +46,37 @@ export function UsernameSetup({ onDone }: { onDone: () => void }) {
                     if (e.key === "Enter") void submit();
                 }}
                 maxLength={24}
-                placeholder="Joel"
+                placeholder={lang === "es" ? "Tu nombre" : "Your name"}
                 autoFocus
                 className="w-64 rounded-xl border border-pr-coal-soft bg-pr-coal-soft/40 px-4 py-2 text-center font-display text-xl text-pr-ivory placeholder:text-pr-ivory-dim/50 focus:border-pr-coqui focus:outline-none"
             />
+
+            <div className="space-y-2">
+                <p className="text-[11px] uppercase tracking-wider text-pr-ivory-dim">
+                    {lang === "es" ? "Elige tu ícono" : "Pick your icon"}
+                </p>
+                <div className="grid grid-cols-6 gap-2 sm:grid-cols-6">
+                    {AVATARS.map((a) => (
+                        <button
+                            key={a.id}
+                            type="button"
+                            onClick={() => setLocalAvatar(a.id)}
+                            aria-label={a.label}
+                            className={`flex h-12 w-12 items-center justify-center rounded-full text-2xl transition-transform ${avatar === a.id ? "scale-110 bg-pr-coqui/30 ring-2 ring-pr-coqui" : "bg-pr-coal-soft/40 ring-1 ring-pr-coal-soft hover:bg-pr-coal-soft/60"}`}
+                        >
+                            <span aria-hidden>{a.glyph}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             <button
                 type="button"
                 onClick={() => void submit()}
                 disabled={submitting || name.trim().length < 1}
                 className="rounded-xl bg-pr-blue px-8 py-2 font-display text-pr-white shadow disabled:opacity-40"
             >
-                {submitting ? "..." : t("language") === "Idioma" ? "Continuar" : "Continue"}
+                {submitting ? "..." : lang === "es" ? "Continuar" : "Continue"}
             </button>
         </div>
     );

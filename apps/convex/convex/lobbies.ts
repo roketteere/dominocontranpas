@@ -4,6 +4,7 @@ import { mutation } from "./_generated/server.js";
 const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 // Familiar PR-flavored names for AI fill-ins.
 const AI_NAMES: Record<number, string> = { 0: "Tito", 1: "Lefty", 2: "Compa", 3: "Tía Yari" };
+const AI_AVATARS: Record<number, string> = { 0: "coffee", 1: "drum", 2: "parrot", 3: "hibiscus" };
 
 function generateRoomCode(): string {
     let out = "";
@@ -66,6 +67,7 @@ export const createGame = mutation({
             team: "A",
             isAI: false,
             displayName: host.displayName,
+            ...(host.avatar !== undefined && { avatar: host.avatar }),
             lastSeenAt: now,
             autoPassCount: 0,
         });
@@ -108,6 +110,7 @@ export const joinByCode = mutation({
             team: position % 2 === 0 ? "A" : "B",
             isAI: false,
             displayName: user.displayName,
+            ...(user.avatar !== undefined && { avatar: user.avatar }),
             lastSeenAt: now,
             autoPassCount: 0,
         });
@@ -144,6 +147,7 @@ export const addAiSeat = mutation({
             team: args.position % 2 === 0 ? "A" : "B",
             isAI: true,
             displayName: AI_NAMES[args.position] ?? "Bot",
+            avatar: AI_AVATARS[args.position] ?? "star",
             lastSeenAt: now,
             autoPassCount: 0,
         });

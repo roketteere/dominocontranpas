@@ -238,32 +238,33 @@ export function OnlineBoard() {
     const canLeft = selectedTile !== null ? sidesForSelected.includes("left") : anyPlay;
     const canRight = selectedTile !== null ? sidesForSelected.includes("right") : anyPlay;
 
-    // Map seat positions to visual placement around the table from this player's perspective.
-    // Whoever I am, my seat is "south". The seat to my left in CCW order is west, etc.
+    // Sort opponents in CCW turn order starting from my left (next-to-act).
     const myPos = view.mySeatPosition ?? 0;
-    const placementOf = (pos: number): "top" | "left" | "right" | "self" => {
-        const delta = (pos - myPos + 4) % 4;
-        if (delta === 0) return "self";
-        if (delta === 1) return "left";
-        if (delta === 2) return "top";
-        return "right";
-    };
+    const opponentsOrdered = [...state.seats]
+        .filter((s) => s.position !== myPos)
+        .sort((a, b) => {
+            const da = (a.position - myPos + 4) % 4;
+            const db = (b.position - myPos + 4) % 4;
+            return da - db;
+        });
 
-    const seatAt = (visualSlot: "top" | "left" | "right") =>
-        state.seats.find((s) => placementOf(s.position) === visualSlot);
-
-    const renderOpponent = (slot: "top" | "left" | "right") => {
-        const seat = seatAt(slot);
-        if (seat === undefined) return null;
+    const renderOpponent = (seat: (typeof state.seats)[number]) => {
         const handCount = opponentCounts[seat.position] ?? 0;
         const isCurrent = view.turnIndex === seat.position;
+        const seatAvatar = (
+            view.seats.find((s) => s.position === seat.position) as
+                | { avatar?: string | null }
+                | undefined
+        )?.avatar;
         return (
             <OpponentRow
+                key={seat.position}
                 seat={seat}
                 handCount={handCount}
                 isCurrentTurn={isCurrent}
                 isAiThinking={false}
-                placement={slot}
+                placement="row"
+                avatarId={seatAvatar ?? null}
             />
         );
     };
@@ -276,20 +277,18 @@ export function OnlineBoard() {
             <div className="flex flex-1 flex-col gap-3">
                 <ScoreBar state={state} />
 
-                <div>{renderOpponent("top")}</div>
+                <div className="flex items-start justify-around gap-2">
+                    {opponentsOrdered.map((s) => renderOpponent(s))}
+                </div>
 
-                <div className="my-1 grid flex-1 grid-cols-[auto_1fr_auto] items-stretch gap-2">
-                    <div>{renderOpponent("left")}</div>
-                    <div className="min-w-0">
-                        <Chain
-                            chain={state.chain}
-                            canDropLeft={isMyTurn && canLeft}
-                            canDropRight={isMyTurn && canRight}
-                            onTapLeft={() => playOnSide("left")}
-                            onTapRight={() => playOnSide("right")}
-                        />
-                    </div>
-                    <div>{renderOpponent("right")}</div>
+                <div className="my-1 flex-1">
+                    <Chain
+                        chain={state.chain}
+                        canDropLeft={isMyTurn && canLeft}
+                        canDropRight={isMyTurn && canRight}
+                        onTapLeft={() => playOnSide("left")}
+                        onTapRight={() => playOnSide("right")}
+                    />
                 </div>
 
                 <div className="flex items-center justify-between rounded-xl bg-pr-coal-soft/40 px-3 py-2 text-sm">

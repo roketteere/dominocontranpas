@@ -81,6 +81,7 @@ export const myGameView = query({
                 team: s.team,
                 isAI: s.isAI,
                 displayName: s.displayName,
+                avatar: s.avatar,
                 userId: s.userId,
                 autoPassCount: s.autoPassCount,
             })),
@@ -140,6 +141,7 @@ export const lobbyView = query({
                 team: s.team,
                 isAI: s.isAI,
                 displayName: s.displayName,
+                avatar: s.avatar,
                 userId: s.userId,
             })),
         };
