@@ -4,7 +4,10 @@
   "version": "0.0.0",
   "scripts": {
     "test": "pnpm --filter web test",
-    "typecheck": "pnpm --filter web typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "deploy:convex": "pnpm --filter convex deploy",
+    "deploy:web": "pnpm --filter web build",
+    "deploy:web:prod": "pnpm --filter web exec cross-env VITE_CONVEX_URL=$CONVEX_PROD_URL pnpm build"
   },
   "packageManager": "pnpm@9.0.0"
 }

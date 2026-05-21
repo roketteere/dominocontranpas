@@ -59,7 +59,8 @@ pnpm --filter convex dev
 
 ## Status
 
-Pre-alpha. **Phases 1 + 2 closed; Phase 3 scaffolded.**
+Pre-alpha. **Phases 1 + 2 closed; Phase 3 scaffolded; production deploy
+documented in [DEPLOY.md](./DEPLOY.md).**
 
 - **Phase 1 (engine):** pure rule engine in `apps/web/src/engine/`.
   58/58 Vitest tests, ~99% statement / ~92% branch coverage.
