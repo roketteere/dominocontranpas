@@ -1,7 +1,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { Hand as HandT, Tile as TileT } from "../engine/types.js";
-import { Tile, type TileGlow } from "./Tile.js";
+import { Tile } from "./Tile.js";
 import { tileToString } from "../engine/tiles.js";
 import { useGameStore } from "../state/gameStore.js";
 import { equals } from "../engine/tiles.js";
@@ -25,17 +25,19 @@ function DraggableTile({
         data: { tile },
     });
 
-    // All glow/depth/desaturate is handled inside the SVG tile via CSS filter:drop-shadow.
-    // The button wrapper only handles layout and drag transforms.
-    const tileGlow: TileGlow = humanTurn ? (canPlay ? "playable" : "unplayable") : "none";
+    // Playable tiles are raised; unplayable tiles stay at baseline and are subtly dimmed.
+    // No colored glow — elevation alone signals "this can be played."
+    const elevated = canPlay && humanTurn && !isDragging;
+    const dndOffset = CSS.Translate.toString(transform);
+    const elevateY = elevated ? "translateY(-12px)" : "";
 
     const style: React.CSSProperties = {
-        transform: CSS.Translate.toString(transform),
+        transform: [dndOffset, elevateY].filter(Boolean).join(" ") || undefined,
         opacity: isDragging ? 0.55 : 1,
         cursor: canPlay ? (isDragging ? "grabbing" : "grab") : humanTurn ? "not-allowed" : "default",
         touchAction: "none",
-        // Small padding so the drop-shadow on the SVG tile isn't clipped by a parent overflow:hidden
         padding: "4px",
+        transition: isDragging ? "none" : "transform 0.15s ease-out",
     };
 
     return (
@@ -44,11 +46,16 @@ function DraggableTile({
             style={style}
             onClick={onClick}
             type="button"
-            className={`transition-transform ${canPlay && !isDragging ? "hover:-translate-y-1 active:scale-95" : ""}`}
             {...attributes}
             {...listeners}
         >
-            <Tile tile={tile} orientation="vertical" size="lg" selected={selected} glow={tileGlow} />
+            <Tile
+                tile={tile}
+                orientation="vertical"
+                size="lg"
+                selected={selected}
+                dim={!canPlay && humanTurn}
+            />
         </button>
     );
 }

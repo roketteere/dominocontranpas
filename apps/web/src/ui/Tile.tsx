@@ -18,9 +18,6 @@ const R_FRAC = 0.105;
 
 export type Rotation = 0 | 90 | 180 | 270;
 
-// "playable" = green glow,  "unplayable" = red glow + desaturate,  "none" = depth shadow only
-export type TileGlow = "playable" | "unplayable" | "none";
-
 export type TileProps = {
     tile: TileT;
     orientation?: "horizontal" | "vertical";
@@ -28,7 +25,7 @@ export type TileProps = {
     selected?: boolean;
     faceDown?: boolean;
     rotation?: Rotation;
-    glow?: TileGlow;
+    dim?: boolean;      // subtle desaturation for unplayable tiles — no glow
     className?: string;
 };
 
@@ -52,18 +49,11 @@ function Pips({ pip, h, ox, oy, dim }: { pip: Pip; h: number; ox: number; oy: nu
     );
 }
 
-// Compute the CSS filter string for the SVG element.
-// All glow and depth is handled here — nothing on the wrapping button.
-function tileFilter(glow: TileGlow, selected: boolean): string {
+// Depth shadow only — no colored glow. Playable/unplayable distinction is
+// handled by elevation (translateY) on the wrapper in Hand.tsx.
+function tileFilter(dim: boolean): string {
     const depth = "drop-shadow(0px 3px 5px rgba(0,0,0,0.55)) drop-shadow(0px 1px 2px rgba(0,0,0,0.4))";
-    if (glow === "playable" || selected) {
-        const ring = "drop-shadow(0 0 6px rgba(163,230,53,0.9)) drop-shadow(0 0 12px rgba(163,230,53,0.45))";
-        return `${ring} ${depth}`;
-    }
-    if (glow === "unplayable") {
-        return `drop-shadow(0 0 5px rgba(206,17,38,0.5)) ${depth} saturate(0.35) brightness(0.75)`;
-    }
-    return depth;
+    return dim ? `${depth} saturate(0.5) brightness(0.82)` : depth;
 }
 
 export function Tile({
@@ -73,7 +63,7 @@ export function Tile({
     selected = false,
     faceDown = false,
     rotation = 0,
-    glow = "none",
+    dim = false,
     className = "",
 }: TileProps) {
     const h = HALF[size];
@@ -81,12 +71,11 @@ export function Tile({
     const isVert = orientation === "vertical";
     const svgW = isVert ? h : h * 2 + d;
     const svgH = isVert ? h * 2 + d : h;
-    const dim = glow === "unplayable";
 
     const style: React.CSSProperties = {
         display: "block",
-        overflow: "visible",          // let drop-shadow render outside the SVG bounding box
-        filter: tileFilter(glow, selected),
+        overflow: "visible",
+        filter: tileFilter(dim),
         transform: rotation !== 0 ? `rotate(${rotation}deg)` : undefined,
         transformOrigin: "center",
         transition: "transform 0.2s ease-out",
