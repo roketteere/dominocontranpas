@@ -66,14 +66,16 @@ function PipFace({ value, dotSize }: { value: Pip; dotSize: number }) {
     );
 }
 
+export type Rotation = 0 | 90 | 180 | 270;
+
 export type TileProps = {
     tile: TileT;
     orientation?: "horizontal" | "vertical";
     size?: "sm" | "md" | "lg";
     selected?: boolean;
     faceDown?: boolean;
-    /** When true, the tile's two pip faces are rendered in reversed visual order. */
-    flipped?: boolean;
+    /** CSS rotation in degrees. The tile's bounding box stays the same; only the visual spins. */
+    rotation?: Rotation;
     className?: string;
 };
 
@@ -101,16 +103,21 @@ export function Tile({
     size = "md",
     selected = false,
     faceDown = false,
-    flipped = false,
+    rotation = 0,
     className = "",
 }: TileProps) {
     const sizeCls = orientation === "horizontal" ? SIZE_CLASSES[size] : SIZE_VERTICAL[size];
     const ringCls = selected ? "ring-2 ring-pr-coqui" : "";
+    const rotateStyle: React.CSSProperties = {
+        transform: `rotate(${rotation}deg)`,
+        transition: "transform 0.2s ease-out",
+    };
     if (faceDown) {
         return (
             <div
                 className={`${sizeCls} ${ringCls} ${className} rounded-md border border-pr-coal-soft bg-pr-blue-dark shadow-md`}
                 style={{
+                    ...rotateStyle,
                     backgroundImage:
                         "repeating-linear-gradient(45deg, var(--color-pr-blue) 0 4px, var(--color-pr-blue-dark) 4px 8px)",
                 }}
@@ -119,20 +126,19 @@ export function Tile({
     }
     const dotPx = DOT_PX[size];
     const dividerClass = orientation === "horizontal" ? "h-px w-full" : "w-px h-full";
-    // Default render: tile[0] on the visual left/top, tile[1] on the visual right/bottom.
-    // When flipped, swap the two pip faces so the matching pip can touch the chain end.
-    const firstPip = flipped ? tile[1] : tile[0];
-    const secondPip = flipped ? tile[0] : tile[1];
+    // tile[0] is rendered in the first half (left for horizontal, top for vertical), tile[1] in
+    // the second. CSS rotation handles every visual reorientation (90° increments). No pip-swap.
     return (
         <div
             className={`${sizeCls} ${ringCls} ${className} flex ${orientation === "horizontal" ? "flex-row" : "flex-col"} rounded-md border border-pr-coal-soft bg-pr-ivory shadow-md overflow-hidden`}
+            style={rotateStyle}
         >
             <div className="flex flex-1 items-center justify-center bg-pr-ivory">
-                <PipFace value={firstPip} dotSize={dotPx} />
+                <PipFace value={tile[0]} dotSize={dotPx} />
             </div>
             <div className={`${dividerClass} bg-pr-coal-soft`} />
             <div className="flex flex-1 items-center justify-center bg-pr-ivory">
-                <PipFace value={secondPip} dotSize={dotPx} />
+                <PipFace value={tile[1]} dotSize={dotPx} />
             </div>
         </div>
     );

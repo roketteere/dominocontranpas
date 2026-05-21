@@ -15,6 +15,7 @@ import { Chain } from "./Chain.js";
 import { Hand } from "./Hand.js";
 import { OpponentRow } from "./OpponentRow.js";
 import { ScoreBar } from "./ScoreBar.js";
+import type { Rotation } from "./Tile.js";
 import { useT } from "../i18n/index.js";
 
 export function Board() {
@@ -25,7 +26,7 @@ export function Board() {
     const t = useT();
 
     const [selectedTile, setSelectedTile] = useState<TileT | null>(null);
-    const [flippedTiles, setFlippedTiles] = useState<ReadonlySet<string>>(new Set());
+    const [rotations, setRotations] = useState<ReadonlyMap<string, Rotation>>(new Map());
 
     // Activation constraints so taps are clicks (not accidental drags). Pointer (mouse) needs an
     // 8px move to start dragging; touch needs a 180ms hold so taps don't fire drags.
@@ -34,29 +35,32 @@ export function Board() {
         useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
     );
 
-    const toggleFlip = useCallback((tile: TileT) => {
-        setFlippedTiles((prev) => {
-            const next = new Set(prev);
+    const rotateBy = useCallback((tile: TileT, delta: 90 | -90) => {
+        setRotations((prev) => {
+            const next = new Map(prev);
             const id = tileToString(tile);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
+            const current = next.get(id) ?? 0;
+            // Normalize to 0/90/180/270 in [0, 360).
+            const raw = (current + delta + 360) % 360;
+            const normalized = raw as Rotation;
+            next.set(id, normalized);
             return next;
         });
     }, []);
 
-    // Mouse wheel scroll on a tile flips it. Throttled so a trackpad swipe doesn't fire a dozen
-    // toggles. Auto-selects the tile being scrolled on so the rotation feels coherent.
-    const lastWheelFlipRef = useRef(0);
+    // Mouse wheel: scroll up = rotate counter-clockwise (left, -90°); scroll down = clockwise (+90°).
+    // Throttled to ~one step per 200ms so a trackpad swipe doesn't spin through every angle.
+    const lastWheelRef = useRef(0);
     const onWheelRotate = useCallback(
         (tile: TileT, deltaY: number) => {
             if (Math.abs(deltaY) < 4) return;
             const now = Date.now();
-            if (now - lastWheelFlipRef.current < 200) return;
-            lastWheelFlipRef.current = now;
+            if (now - lastWheelRef.current < 200) return;
+            lastWheelRef.current = now;
             setSelectedTile(tile);
-            toggleFlip(tile);
+            rotateBy(tile, deltaY < 0 ? -90 : 90);
         },
-        [toggleFlip],
+        [rotateBy],
     );
 
     useEffect(() => {
@@ -68,11 +72,12 @@ export function Board() {
             const tag = target?.tagName ?? "";
             if (tag === "INPUT" || tag === "TEXTAREA") return;
             e.preventDefault();
-            toggleFlip(selectedTile);
+            // R rotates clockwise; Shift+R counter-clockwise.
+            rotateBy(selectedTile, e.shiftKey ? -90 : 90);
         };
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
-    }, [selectedTile, toggleFlip]);
+    }, [selectedTile, rotateBy]);
 
     const isHumanTurn = useMemo(() => {
         if (state === null || humanPlayerId === null) return false;
@@ -115,7 +120,7 @@ export function Board() {
 
     const onRotateSelected = (): void => {
         if (selectedTile === null) return;
-        toggleFlip(selectedTile);
+        rotateBy(selectedTile, 90);
     };
 
     const playOnSide = (side: Side): void => {
@@ -228,7 +233,7 @@ export function Board() {
                     hand={humanHand}
                     playable={playableTiles}
                     selectedTile={selectedTile}
-                    flippedTiles={flippedTiles}
+                    rotations={rotations}
                     onSelect={onTileSelect}
                     onRotate={onRotateSelected}
                     onWheelRotate={onWheelRotate}

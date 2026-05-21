@@ -15,10 +15,10 @@ function PlacedTileView({ placed }: { placed: PlacedTile }) {
     // Doubles play perpendicular to the chain direction for the traditional PR look.
     const orientation = placed.leftPip === placed.rightPip ? "vertical" : "horizontal";
     // The normalized tile has tile[0] <= tile[1]. If the placement put the higher pip on the
-    // visual left (placed.leftPip === tile[1]), we need to flip the visual rendering so the
-    // matching pip touches the neighboring tile's matching pip.
-    const flipped = placed.tile[0] !== placed.leftPip;
-    return <Tile tile={placed.tile} orientation={orientation} size="sm" flipped={flipped} />;
+    // visual left (placed.leftPip === tile[1]), we rotate 180° so the matching pip touches the
+    // neighboring tile's matching pip.
+    const rotation = placed.tile[0] === placed.leftPip ? 0 : 180;
+    return <Tile tile={placed.tile} orientation={orientation} size="sm" rotation={rotation} />;
 }
 
 function DropZone({
