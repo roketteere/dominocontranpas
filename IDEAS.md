@@ -8,6 +8,37 @@ Don't delete old entries; flip the status above.
 
 ## 2026-05-20 — Project genesis
 
+### `[shipped]` Opus ↔ qwen coordination surface (2026-05-21)
+
+Introduced three durable artifacts at repo root so future qwen
+dispatches inherit prior lessons instead of rediscovering them:
+
+- **`BugFix.md`** — task channel. Status lifecycle `[open]` →
+  `[in-progress]` → `[done]` / `[failed]` / `[blocked]` / `[verified]`.
+  Seeded with `BUG-001 — getMyInvites Server Error` for qwen to resolve
+  next session.
+- **`Expectations.md`** — qwen self-check rules. Codifies the failures
+  observed on the first qwen ship (Rules of Hooks, no inline
+  annotations on useQuery callbacks, no markdown fences, etc.) so they
+  cost zero tokens to re-discover.
+- **Permanent memory** at `~/.claude/projects/.../memory/feedback_session_legacy_cheatcode.md`
+  — every meaningful session must leave behind ONE durable improvement
+  (Expectations rule, BugFix entry, or memory entry). Indexed in
+  `MEMORY.md`.
+
+Plan: `~/.claude/plans/can-you-write-the-magical-haven.md` (the
+coordination-surface version; supersedes the earlier Phase B plan,
+which is preserved here as `[parked]` below).
+
+### `[parked]` Phase B turn timers (deferred from 2026-05-21)
+
+Deferred until BUG-001 is closed and the coordination surface has at
+least one end-to-end qwen round-trip on it. The brief shape (schema
++ `pendingAutoPassId` + `scheduleAutoPass` helper + cancel-on-move at
+2 sites + reschedule at 4 sites in `games.ts`, plus CreateLobby option
+and TurnTimer component) is preserved in the prior plan file revision
+and can be revived as a fresh plan when ready.
+
 ### `[shipped]` Phase A social features (2026-05-21, commit 117aa8d)
 
 Friends, invites, leaderboard, single-game enforcement. All backend + UI shipped:
