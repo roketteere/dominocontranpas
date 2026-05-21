@@ -16,14 +16,14 @@ web bundle bakes in at build time.
 
 ```bash
 npx convex login                              # opens browser, free signup
-pnpm --filter convex deploy                   # creates prod deployment, prints the URL
+pnpm --filter convex run push   # convex deploy (renamed to avoid pnpm builtin collision)                   # creates prod deployment, prints the URL
 ```
 
 Copy the printed URL (looks like `https://your-app-123.convex.cloud`).
 Save it somewhere; you'll need it for every web build.
 
 > Convex stores the active deployment in `apps/convex/.env.local`.
-> Re-running `pnpm --filter convex deploy` later just pushes the
+> Re-running `pnpm --filter convex run push   # convex deploy (renamed to avoid pnpm builtin collision)` later just pushes the
 > latest schema + functions to that same deployment.
 
 ### 2. Spaceship subdomain
@@ -48,7 +48,7 @@ You also need a **SPA fallback rule**: every unknown path must serve
 
 ```bash
 # 1. Push latest backend code + schema to Convex Cloud
-pnpm --filter convex deploy
+pnpm --filter convex run push   # convex deploy (renamed to avoid pnpm builtin collision)
 
 # 2. Build the web bundle pointed at the Convex prod URL
 CONVEX_PROD_URL="https://your-app-123.convex.cloud" \
@@ -124,7 +124,7 @@ AddType audio/webm .webm
 ## Updating the backend without touching the web
 
 ```bash
-pnpm --filter convex deploy
+pnpm --filter convex run push   # convex deploy (renamed to avoid pnpm builtin collision)
 ```
 
 Schema migrations + new mutations + new queries push to the same
