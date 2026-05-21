@@ -4,7 +4,6 @@ import { useT } from "../i18n/index.js";
 export function MainMenu() {
     const startSoloMatch = useGameStore((s) => s.startSoloMatch);
     const lang = useGameStore((s) => s.lang);
-    const setLang = useGameStore((s) => s.setLang);
     const t = useT();
     const goOnline = () => useGameStore.setState({ screen: "online" });
     return (
@@ -68,15 +67,6 @@ export function MainMenu() {
                 <p>{t("rulesLine2")}</p>
                 <p>{t("rulesLine3")}</p>
             </footer>
-
-            <button
-                type="button"
-                onClick={() => setLang(lang === "es" ? "en" : "es")}
-                className="rounded-lg border border-pr-coal-soft bg-pr-coal-soft/40 px-4 py-1.5 text-xs text-pr-ivory-dim hover:text-pr-ivory"
-                aria-label={t("language")}
-            >
-                {t("switchTo")}
-            </button>
         </div>
     );
 }

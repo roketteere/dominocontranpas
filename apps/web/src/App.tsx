@@ -7,6 +7,7 @@ import { RoundEnd } from "./ui/RoundEnd.js";
 import { MatchEnd } from "./ui/MatchEnd.js";
 import { OnlineRoot } from "./ui/online/OnlineRoot.js";
 import { AudioControls } from "./ui/AudioControls.js";
+import { LanguageMenu } from "./ui/LanguageMenu.js";
 import { convex, isOnlineConfigured } from "./net/convexClient.js";
 import { initMusic, setMusicContext, syncMusicVolume } from "./audio/musicPlayer.js";
 import { installAudioUnlock } from "./audio/unlock.js";
@@ -63,6 +64,7 @@ export function App() {
                     )
                 )}
             </main>
+            <LanguageMenu />
             <AudioControls />
             <Credit />
         </ConvexProvider>
