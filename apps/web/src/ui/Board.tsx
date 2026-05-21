@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     DndContext,
     PointerSensor,
@@ -43,6 +43,21 @@ export function Board() {
             return next;
         });
     }, []);
+
+    // Mouse wheel scroll on a tile flips it. Throttled so a trackpad swipe doesn't fire a dozen
+    // toggles. Auto-selects the tile being scrolled on so the rotation feels coherent.
+    const lastWheelFlipRef = useRef(0);
+    const onWheelRotate = useCallback(
+        (tile: TileT, deltaY: number) => {
+            if (Math.abs(deltaY) < 4) return;
+            const now = Date.now();
+            if (now - lastWheelFlipRef.current < 200) return;
+            lastWheelFlipRef.current = now;
+            setSelectedTile(tile);
+            toggleFlip(tile);
+        },
+        [toggleFlip],
+    );
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
@@ -216,6 +231,7 @@ export function Board() {
                     flippedTiles={flippedTiles}
                     onSelect={onTileSelect}
                     onRotate={onRotateSelected}
+                    onWheelRotate={onWheelRotate}
                 />
             </div>
         </DndContext>

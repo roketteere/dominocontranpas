@@ -9,12 +9,14 @@ function DraggableTile({
     tile,
     canPlay,
     onClick,
+    onWheel,
     selected,
     flipped,
 }: {
     tile: TileT;
     canPlay: boolean;
     onClick: () => void;
+    onWheel: (e: React.WheelEvent) => void;
     selected: boolean;
     flipped: boolean;
 }) {
@@ -34,6 +36,7 @@ function DraggableTile({
             ref={setNodeRef}
             style={style}
             onClick={onClick}
+            onWheel={onWheel}
             className={`touch-none transition-transform ${canPlay ? "hover:-translate-y-1" : "grayscale"}`}
             {...attributes}
             {...listeners}
@@ -51,9 +54,18 @@ type HandProps = {
     flippedTiles: ReadonlySet<string>;
     onSelect: (tile: TileT) => void;
     onRotate: () => void;
+    onWheelRotate: (tile: TileT, deltaY: number) => void;
 };
 
-export function Hand({ hand, playable, selectedTile, flippedTiles, onSelect, onRotate }: HandProps) {
+export function Hand({
+    hand,
+    playable,
+    selectedTile,
+    flippedTiles,
+    onSelect,
+    onRotate,
+    onWheelRotate,
+}: HandProps) {
     const t = useT();
     const isPlayable = (tile: TileT) => playable.some((p) => p[0] === tile[0] && p[1] === tile[1]);
     const isSelected = (tile: TileT) =>
@@ -70,6 +82,7 @@ export function Hand({ hand, playable, selectedTile, flippedTiles, onSelect, onR
                         selected={isSelected(tile)}
                         flipped={isFlipped(tile)}
                         onClick={() => onSelect(tile)}
+                        onWheel={(e) => onWheelRotate(tile, e.deltaY)}
                     />
                 ))}
             </div>
