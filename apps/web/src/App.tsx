@@ -25,7 +25,19 @@ export function App() {
                     )
                 )}
             </main>
+            <Credit />
         </ConvexProvider>
+    );
+}
+
+// Bottom-left attribution. Stays visible across every screen.
+function Credit() {
+    const year = new Date().getFullYear();
+    return (
+        <div className="fixed bottom-3 left-3 z-20 select-none text-[10px] leading-tight text-pr-ivory-dim/70">
+            <div>By: Joel Pérez Santiago</div>
+            <div>TeKi © {year}</div>
+        </div>
     );
 }
 
