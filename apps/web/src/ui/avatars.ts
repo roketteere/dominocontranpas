@@ -14,7 +14,23 @@ export type AvatarId =
     | "star"
     | "flag"
     | "coffee"
-    | "hibiscus";
+    | "hibiscus"
+    | "mic"
+    | "boombox"
+    | "shades"
+    | "chain"
+    | "dancer"
+    | "maracas"
+    | "sax"
+    | "notes"
+    | "pavaHat"
+    | "rooster"
+    | "cuatro"
+    | "mountain"
+    | "plantain"
+    | "pinaColada"
+    | "vejigante"
+    | "elMorro";
 
 export const AVATARS: { id: AvatarId; glyph: string; label: string }[] = [
     { id: "coqui", glyph: "🐸", label: "Coquí" },
@@ -29,6 +45,22 @@ export const AVATARS: { id: AvatarId; glyph: string; label: string }[] = [
     { id: "flag", glyph: "🇵🇷", label: "Bandera" },
     { id: "coffee", glyph: "☕", label: "Café" },
     { id: "hibiscus", glyph: "🌺", label: "Flor de maga" },
+    { id: "mic", glyph: "🎤", label: "Micrófono" },
+    { id: "boombox", glyph: "📻", label: "Boombox" },
+    { id: "shades", glyph: "😎", label: "Gafas" },
+    { id: "chain", glyph: "⛓️", label: "Cadena" },
+    { id: "dancer", glyph: "💃", label: "Bailadora" },
+    { id: "maracas", glyph: "🪇", label: "Maracas" },
+    { id: "sax", glyph: "🎷", label: "Saxofón" },
+    { id: "notes", glyph: "🎶", label: "Notas" },
+    { id: "pavaHat", glyph: "👒", label: "Pava" },
+    { id: "rooster", glyph: "🐓", label: "Gallo" },
+    { id: "cuatro", glyph: "🎸", label: "Cuatro" },
+    { id: "mountain", glyph: "⛰️", label: "Cordillera" },
+    { id: "plantain", glyph: "🍌", label: "Plátano" },
+    { id: "pinaColada", glyph: "🍹", label: "Piña Colada" },
+    { id: "vejigante", glyph: "🎭", label: "Vejigante" },
+    { id: "elMorro", glyph: "🏰", label: "El Morro" },
 ];
 
 export function glyphFor(id: string | undefined | null): string {

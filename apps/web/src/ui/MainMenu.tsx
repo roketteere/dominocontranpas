@@ -1,5 +1,6 @@
 import { useGameStore } from "../state/gameStore.js";
 import { useT } from "../i18n/index.js";
+import { ProfileChip } from "./ProfileChip.js";
 
 export function MainMenu() {
     const startSoloMatch = useGameStore((s) => s.startSoloMatch);
@@ -7,7 +8,10 @@ export function MainMenu() {
     const t = useT();
     const goOnline = () => useGameStore.setState({ screen: "online" });
     return (
-        <div className="flex flex-1 flex-col items-center justify-center gap-8 text-center">
+        <div className="relative flex flex-1 flex-col items-center justify-center gap-8 text-center">
+            <div className="absolute right-3 top-3">
+                <ProfileChip />
+            </div>
             <header className="space-y-2">
                 <div className="flex items-center justify-center gap-2 text-2xl">
                     <span aria-hidden>🇵🇷</span>

@@ -23,6 +23,16 @@ import { useT } from "../i18n/index.js";
 // Drag-and-drop bypasses the tap-select step entirely.
 type PlacementStep = "idle" | "selected";
 
+// Solo opponents are seeded by gameStore.startSoloMatch with hardcoded names. Pin their avatars
+// to PR-themed icons so the table feels like local play, not faceless bots. 1v1 solo means only
+// position 1 (Tito) is used; positions 2/3 stay for any future return of 4p-vs-AI.
+function soloOpponentAvatar(position: number): string {
+    if (position === 1) return "rooster"; // Tito — jíbaro flavor
+    if (position === 2) return "maracas"; // hypothetical 4p partner
+    if (position === 3) return "dancer"; // hypothetical 4p opponent
+    return "coqui";
+}
+
 export function Board() {
     const state = useGameStore((s) => s.state);
     const humanPlayerId = useGameStore((s) => s.humanPlayerId);
@@ -221,6 +231,7 @@ export function Board() {
                             isCurrentTurn={state.seats[state.turnIndex]?.playerId === s.playerId}
                             isAiThinking={state.seats[state.turnIndex]?.playerId === s.playerId && aiThinking}
                             placement="row"
+                            avatarId={soloOpponentAvatar(s.position)}
                         />
                     ))}
                 </div>

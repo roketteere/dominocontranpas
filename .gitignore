@@ -60,6 +60,7 @@ ios/build/
 /BUG-*-brief.md
 /*.ts.out
 /*.tsx.out
+/bug*.out
 /.qwen-raw.json
 /.qwen-dispatch.ps1
 
