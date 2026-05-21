@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+﻿import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 // @ts-ignore — stub overwritten by `convex dev`
 import { api } from "@convex/_generated/api.js";
@@ -24,6 +24,9 @@ export function SeatPicker() {
     const addAiSeat = useMutation(api.lobbies.addAiSeat);
     const leaveLobby = useMutation(api.lobbies.leaveLobby);
     const startMatch = useMutation(api.games.startMatch);
+    const sendInvite = useMutation(api.invites.sendInvite);
+    const friends = useQuery(api.friends.getFriends, me ? { userId: me._id } : "skip") ?? [];
+    const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
 
     // When the lobby phase transitions to in_round, jump to the playing screen.
     useEffect(() => {
@@ -119,6 +122,56 @@ export function SeatPicker() {
                     );
                 })}
             </div>
+
+            {friends.length > 0 && (
+                <div className="w-full max-w-md rounded-xl bg-pr-coal-soft/60 p-3">
+                    <p className="mb-2 text-xs text-pr-ivory-dim">
+                        {lang === "es" ? "Invitar amigos" : "Invite friends"}
+                    </p>
+                    <ul className="flex flex-col gap-2">
+                        {friends.map((f) => {
+                            const busy = f.activeGameId !== undefined && f.activeGameId !== null;
+                            const invited = invitedIds.has(f.userId);
+                            const disabled = busy || invited || !me || !gameId;
+                            return (
+                                <li key={f.friendshipId} className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-2xl">{f.avatar ?? "🙂"}</span>
+                                        <span className="text-sm text-pr-ivory">{f.displayName}</span>
+                                        {busy && (
+                                            <span className="text-xs text-pr-ivory-dim">
+                                                {lang === "es" ? "(en partida)" : "(in game)"}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        disabled={disabled}
+                                        onClick={() => {
+                                            if (!me || !gameId) return;
+                                            void sendInvite({
+                                                gameId,
+                                                fromUserId: me._id,
+                                                toUserId: f.userId as never,
+                                            });
+                                            setInvitedIds((prev) => {
+                                                const next = new Set(prev);
+                                                next.add(f.userId);
+                                                return next;
+                                            });
+                                        }}
+                                        className="rounded-lg bg-pr-coqui px-3 py-1 text-xs font-bold text-pr-coal disabled:bg-pr-coal disabled:text-pr-ivory-dim"
+                                    >
+                                        {invited
+                                            ? (lang === "es" ? "Invitado" : "Invited")
+                                            : (lang === "es" ? "Invitar" : "Invite")}
+                                    </button>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </div>
+            )}
 
             <div className="flex gap-3">
                 <button
