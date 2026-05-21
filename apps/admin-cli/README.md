@@ -11,27 +11,39 @@ From the repo root:
 
 ```powershell
 pnpm install
-cd apps/admin-cli
-copy .env.example .env
+copy apps\admin-cli\.env.example apps\admin-cli\.env
 ```
 
-Then edit `.env` and fill in:
+Then find your `users._id` without leaving the terminal:
 
-- `CONVEX_URL` — the prod Convex deployment URL. Already pre-filled
-  in `.env.example`; leave as-is unless you've spun up a new
-  deployment.
-- `ADMIN_USER_ID` — your `users._id`. Find it via the Convex
-  dashboard → Data → `users` table → find the row matching your
-  display name → copy the `_id` value (long base32 string starting
-  with `j...` or similar).
-- `OWNER_SECRET` — optional, only needed for `set-owner`. Must match
-  the `OWNER_SECRET` env var on your Convex deployment.
+1. Open the deployed Netlify URL in your browser, open DevTools
+   console (`F12`).
+2. Run: `localStorage.getItem('dct.deviceId')` — you'll get back a
+   UUID string in quotes.
+3. From the repo root:
+   ```powershell
+   pnpm --filter admin-cli start whoami <paste-the-deviceId-here>
+   ```
+   It prints your `userId`, `displayName`, `friendCode`,
+   `recoveryCode`, and `isOwner` status.
+4. Paste the printed `userId` into `apps/admin-cli/.env` as
+   `ADMIN_USER_ID`.
+
+Other env vars:
+
+- `CONVEX_URL` — pre-filled with the prod URL; leave it.
+- `OWNER_SECRET` — optional, only needed for `set-owner`. Must
+  match the `OWNER_SECRET` env var on your Convex deployment.
 
 ## Commands
 
 All run from the repo root:
 
 ```powershell
+# Bootstrap: find your userId from your browser deviceId. Works WITHOUT
+# being an owner yet — handy on first-time setup.
+pnpm --filter admin-cli start whoami <deviceId>
+
 # List every user with their friend code + recovery code + creation date.
 pnpm --filter admin-cli start list
 

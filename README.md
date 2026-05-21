@@ -95,19 +95,23 @@ Setup once:
 
 ```powershell
 pnpm install
-copy apps/admin-cli/.env.example apps/admin-cli/.env
-# then edit apps/admin-cli/.env and fill in:
-#   CONVEX_URL      (already pre-filled with the prod URL)
-#   ADMIN_USER_ID   (your users._id from the Convex dashboard)
-#   OWNER_SECRET    (optional — only needed for set-owner)
+copy apps\admin-cli\.env.example apps\admin-cli\.env
+
+# Find your userId without leaving the terminal: open the deployed
+# Netlify URL, open DevTools console (F12), run
+# localStorage.getItem('dct.deviceId'), then:
+pnpm --filter admin-cli start whoami <paste-deviceId>
+
+# Paste the printed userId into apps/admin-cli/.env as ADMIN_USER_ID.
+# Then list everyone:
+pnpm --filter admin-cli start list
 ```
 
-Run from the repo root:
+Other commands (from repo root):
 
 ```powershell
-pnpm --filter admin-cli start list                 # everyone
 pnpm --filter admin-cli start find joel            # filter by name
-pnpm --filter admin-cli start set-owner <userId>   # promote a co-admin
+pnpm --filter admin-cli start set-owner <userId>   # promote a co-admin (needs OWNER_SECRET)
 ```
 
 Full usage / output format / exit codes in `apps/admin-cli/README.md`.

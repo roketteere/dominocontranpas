@@ -110,6 +110,33 @@ async function cmdFind(needle) {
     printUserTable(filtered);
 }
 
+// Lookup the userId for a given deviceId. Used to populate ADMIN_USER_ID without trawling the
+// Convex dashboard: open the deployed site in DevTools, run
+// `localStorage.getItem('dct.deviceId')`, paste here. Uses the public getUserByDeviceId query
+// so this works WITHOUT being an owner yet — handy on first-time CLI setup.
+async function cmdWhoami(deviceId) {
+    if (!deviceId) die(1, "usage: whoami <deviceId>");
+    // CONVEX_URL is required; ADMIN_USER_ID is not (this is the bootstrap path).
+    if (!CONVEX_URL) die(2, "CONVEX_URL not set — copy .env.example to .env and fill it in.");
+    const c = new ConvexHttpClient(CONVEX_URL);
+    let user;
+    try {
+        user = await c.query("users:getUserByDeviceId", { deviceId });
+    } catch (e) {
+        die(4, `Convex error: ${e instanceof Error ? e.message : String(e)}`);
+    }
+    if (user === null) {
+        die(3, `No user found for deviceId ${deviceId}. Has this browser ever visited the site?`);
+    }
+    console.log(`userId:       ${user._id}`);
+    console.log(`displayName:  ${user.displayName || "—"}`);
+    console.log(`friendCode:   ${user.friendCode || "—"}`);
+    console.log(`recoveryCode: ${user.recoveryCode || "—"}`);
+    console.log(`isOwner:      ${user.isOwner ? "true" : "false"}`);
+    console.log("");
+    console.log("Paste the userId above into apps/admin-cli/.env as ADMIN_USER_ID.");
+}
+
 async function cmdSetOwner(userId) {
     if (!userId) die(1, "usage: set-owner <userId>");
     if (!OWNER_SECRET) die(2, "OWNER_SECRET not set in .env — required for set-owner.");
@@ -123,12 +150,16 @@ async function cmdSetOwner(userId) {
 
 function usage() {
     console.log("usage:");
+    console.log("  pnpm --filter admin-cli start whoami <deviceId>   # bootstrap: find your userId");
     console.log("  pnpm --filter admin-cli start list");
     console.log("  pnpm --filter admin-cli start find <substring>");
     console.log("  pnpm --filter admin-cli start set-owner <userId>");
 }
 
 switch (subcommand) {
+    case "whoami":
+        await cmdWhoami(args[0]);
+        break;
     case "list":
         await cmdList();
         break;
