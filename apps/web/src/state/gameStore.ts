@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { GameState, Move, PlayerId, RoundOutcome, TeamId } from "../engine/types.js";
 import type { Lang } from "../i18n/strings.js";
+import { playClick, playSwoosh, playPass, playFanfare } from "../audio/audioEngine.js";
 
 const LANG_KEY = "dct.lang";
 
@@ -103,8 +104,15 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     submitHumanMove: (move) => {
         const current = get().state;
         if (current === null) return;
+        if (move.kind === "play") playClick();
+        else playPass();
         const afterMove = applyMove(current, move);
+        const beforeStealHistoryLen = afterMove.history.length;
         const afterSteal = resolveStealPhase(afterMove, cryptoRng());
+        if (afterSteal.history.length > beforeStealHistoryLen) {
+            const last = afterSteal.history[afterSteal.history.length - 1];
+            if (last !== undefined && last.kind === "steal") playSwoosh();
+        }
         set({ state: afterSteal });
         finalizeTurn(set, get);
     },
@@ -121,8 +129,15 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
             const stateNow = get().state;
             if (stateNow === null) return;
             const move = chooseAiMove(stateNow, info.actorId);
+            if (move.kind === "play") playClick();
+            else playPass();
             const afterMove = applyMove(stateNow, move);
+            const beforeStealHistoryLen = afterMove.history.length;
             const afterSteal = resolveStealPhase(afterMove, cryptoRng());
+            if (afterSteal.history.length > beforeStealHistoryLen) {
+                const last = afterSteal.history[afterSteal.history.length - 1];
+                if (last !== undefined && last.kind === "steal") playSwoosh();
+            }
             set({ state: afterSteal, aiThinking: false });
             finalizeTurn(set, get);
         }, AI_THINK_MS);
@@ -174,6 +189,7 @@ function finalizeTurn(
     if (isRoundOver(s)) {
         const outcome: RoundOutcome | null = computeRoundOutcome(s);
         if (outcome !== null) {
+            playFanfare();
             const afterScore = applyRoundOutcome(s, outcome);
             const matchOver = isMatchOver(afterScore);
             const zapato = matchOver ? isZapato(afterScore) : null;

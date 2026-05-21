@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { ConvexProvider } from "convex/react";
 import { useGameStore } from "./state/gameStore.js";
 import { MainMenu } from "./ui/MainMenu.js";
@@ -5,10 +6,19 @@ import { Board } from "./ui/Board.js";
 import { RoundEnd } from "./ui/RoundEnd.js";
 import { MatchEnd } from "./ui/MatchEnd.js";
 import { OnlineRoot } from "./ui/online/OnlineRoot.js";
+import { AudioControls } from "./ui/AudioControls.js";
 import { convex, isOnlineConfigured } from "./net/convexClient.js";
+import { setMusicTrack, syncMusicVolume } from "./audio/musicPlayer.js";
 
 export function App() {
     const screen = useGameStore((s) => s.screen);
+
+    // Load the background music track once on mount. If the file is missing the audio element
+    // silently skips it. Volume sync happens automatically via the audio store subscription.
+    useEffect(() => {
+        setMusicTrack("/audio/reggaeton-loop.mp3");
+        syncMusicVolume();
+    }, []);
 
     return (
         <ConvexProvider client={convex}>
@@ -25,6 +35,7 @@ export function App() {
                     )
                 )}
             </main>
+            <AudioControls />
             <Credit />
         </ConvexProvider>
     );
