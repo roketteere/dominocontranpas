@@ -14,8 +14,27 @@ function generateRoomCode(): string {
     return out;
 }
 
+// Return the gameId of an active game the user is already in, or null if clear.
+// "Active" means lobby | in_round | round_end — not match_end or abandoned.
+async function findExistingActiveGame(
+    ctx: { db: { query: Function; get: Function } },
+    userId: string,
+): Promise<string | null> {
+    const seats = await ctx.db
+        .query("seats")
+        .withIndex("by_user", (q: { eq: Function }) => q.eq("userId", userId))
+        .collect();
+    for (const seat of seats as { gameId: string }[]) {
+        const game = await ctx.db.get(seat.gameId);
+        if (game === null) continue;
+        const phase = (game as { phase: string }).phase;
+        if (phase !== "match_end" && phase !== "abandoned") return seat.gameId;
+    }
+    return null;
+}
+
 // Host clicks "Create game". We allocate a unique room code, write the games row in lobby
-// phase, and seat the host at position 0 (team A).
+// phase, and seat the host at position 0 (team A). Sets host's activeGameId.
 export const createGame = mutation({
     args: {
         hostUserId: v.id("users"),
@@ -25,6 +44,11 @@ export const createGame = mutation({
     handler: async (ctx, args) => {
         const host = await ctx.db.get(args.hostUserId);
         if (host === null) throw new ConvexError("Host user not found");
+
+        // Enforce single-game-at-a-time.
+        const conflict = await findExistingActiveGame(ctx, args.hostUserId as unknown as string);
+        if (conflict !== null) throw new ConvexError("You are already in an active game");
+
         let roomCode = "";
         for (let attempt = 0; attempt < 10; attempt++) {
             const candidate = generateRoomCode();
@@ -71,6 +95,7 @@ export const createGame = mutation({
             lastSeenAt: now,
             autoPassCount: 0,
         });
+        await ctx.db.patch(args.hostUserId, { activeGameId: gameId });
         return { gameId, roomCode };
     },
 });
@@ -86,12 +111,23 @@ export const joinByCode = mutation({
             .unique();
         if (game === null) throw new ConvexError("Game not found");
         if (game.phase !== "lobby") throw new ConvexError("Game already started");
+
+        // Enforce single-game-at-a-time.
+        const conflict = await findExistingActiveGame(ctx, args.userId as unknown as string);
+        if (conflict !== null) throw new ConvexError("You are already in an active game");
+
         const user = await ctx.db.get(args.userId);
         if (user === null) throw new ConvexError("User not found");
         const existingSeats = await ctx.db
             .query("seats")
             .withIndex("by_game", (q) => q.eq("gameId", game._id))
             .collect();
+
+        // Don't double-seat the same user.
+        if (existingSeats.some((s) => s.userId === args.userId)) {
+            return { gameId: game._id, position: existingSeats.find((s) => s.userId === args.userId)!.position };
+        }
+
         const maxSeats = game.mode === "2p" ? 2 : 4;
         const taken = new Set(existingSeats.map((s) => s.position));
         let position: 0 | 1 | 2 | 3 | null = null;
@@ -114,6 +150,7 @@ export const joinByCode = mutation({
             lastSeenAt: now,
             autoPassCount: 0,
         });
+        await ctx.db.patch(args.userId, { activeGameId: game._id });
         return { gameId: game._id, position };
     },
 });
@@ -154,8 +191,8 @@ export const addAiSeat = mutation({
     },
 });
 
-// Leave a lobby before the match has started. The host leaving with only AI seats remaining
-// deletes the game entirely (no point keeping a botgame alive).
+// Leave a lobby before the match has started. Clears the user's activeGameId.
+// The host leaving with only AI seats remaining deletes the game entirely.
 export const leaveLobby = mutation({
     args: { gameId: v.id("games"), userId: v.id("users") },
     handler: async (ctx, args) => {
@@ -168,6 +205,8 @@ export const leaveLobby = mutation({
             .filter((q) => q.eq(q.field("userId"), args.userId))
             .unique();
         if (mySeat !== null) await ctx.db.delete(mySeat._id);
+        // Clear activeGameId for the leaving user.
+        await ctx.db.patch(args.userId, { activeGameId: undefined });
         if (game.hostUserId === args.userId) {
             const remaining = await ctx.db
                 .query("seats")

@@ -13,7 +13,9 @@ export type OnlineScreen =
     | "seat-picker"
     | "playing"
     | "round_end"
-    | "match_end";
+    | "match_end"
+    | "friends"
+    | "leaderboard";
 
 export type OnlineState = {
     screen: OnlineScreen;
@@ -21,6 +23,7 @@ export type OnlineState = {
     roomCode: string | null;
     setScreen: (s: OnlineScreen) => void;
     setGame: (gameId: Id<"games">, roomCode: string) => void;
+    resumeGame: (gameId: Id<"games">, roomCode: string, phase: string) => void;
     clearGame: () => void;
 };
 
@@ -30,5 +33,14 @@ export const useOnlineStore = create<OnlineState>((set) => ({
     roomCode: null,
     setScreen: (s) => set({ screen: s }),
     setGame: (gameId, roomCode) => set({ gameId, roomCode, screen: "seat-picker" }),
+    resumeGame: (gameId, roomCode, phase) => {
+        const screen: OnlineScreen =
+            phase === "lobby"
+                ? "seat-picker"
+                : phase === "match_end"
+                  ? "match_end"
+                  : "playing";
+        set({ gameId, roomCode, screen });
+    },
     clearGame: () => set({ gameId: null, roomCode: null, screen: "lobby-hub" }),
 }));

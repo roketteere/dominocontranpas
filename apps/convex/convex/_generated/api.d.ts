@@ -9,10 +9,13 @@
  */
 
 import type * as crons from "../crons.js";
+import type * as friends from "../friends.js";
 import type * as games from "../games.js";
 import type * as health from "../health.js";
 import type * as heartbeat from "../heartbeat.js";
+import type * as invites from "../invites.js";
 import type * as lobbies from "../lobbies.js";
+import type * as stats from "../stats.js";
 import type * as users from "../users.js";
 import type * as views from "../views.js";
 
@@ -24,10 +27,13 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   crons: typeof crons;
+  friends: typeof friends;
   games: typeof games;
   health: typeof health;
   heartbeat: typeof heartbeat;
+  invites: typeof invites;
   lobbies: typeof lobbies;
+  stats: typeof stats;
   users: typeof users;
   views: typeof views;
 }>;

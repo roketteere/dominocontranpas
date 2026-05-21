@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     DndContext,
     PointerSensor,
@@ -29,7 +29,6 @@ import { Chain } from "../Chain.js";
 import { Hand } from "../Hand.js";
 import { OpponentRow } from "../OpponentRow.js";
 import { ScoreBar } from "../ScoreBar.js";
-import type { Rotation } from "../Tile.js";
 import { useOnlineGame } from "../../net/useOnlineGame.js";
 import { useIdentityStore } from "../../state/identityStore.js";
 import { useOnlineStore } from "../../state/onlineGameStore.js";
@@ -98,49 +97,11 @@ export function OnlineBoard() {
     const passTurn = useMutation(api.games.passTurn);
 
     const [selectedTile, setSelectedTile] = useState<TileT | null>(null);
-    const [rotations, setRotations] = useState<ReadonlyMap<string, Rotation>>(new Map());
-    const lastWheelRef = useRef(0);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
         useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
     );
-
-    const rotateBy = useCallback((tile: TileT, delta: 90 | -90) => {
-        setRotations((prev) => {
-            const next = new Map(prev);
-            const id = tileToString(tile);
-            const current = next.get(id) ?? 0;
-            next.set(id, (((current + delta + 360) % 360) as Rotation));
-            return next;
-        });
-    }, []);
-
-    const onWheelRotate = useCallback(
-        (tile: TileT, deltaY: number) => {
-            if (Math.abs(deltaY) < 4) return;
-            const now = Date.now();
-            if (now - lastWheelRef.current < 200) return;
-            lastWheelRef.current = now;
-            setSelectedTile(tile);
-            rotateBy(tile, deltaY < 0 ? -90 : 90);
-        },
-        [rotateBy],
-    );
-
-    useEffect(() => {
-        const onKey = (e: KeyboardEvent) => {
-            if (e.key !== "r" && e.key !== "R") return;
-            if (selectedTile === null) return;
-            const target = e.target as HTMLElement | null;
-            const tag = target?.tagName ?? "";
-            if (tag === "INPUT" || tag === "TEXTAREA") return;
-            e.preventDefault();
-            rotateBy(selectedTile, e.shiftKey ? -90 : 90);
-        };
-        window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
-    }, [selectedTile, rotateBy]);
 
     // Auto-route to round_end / match_end on phase change.
     useEffect(() => {
@@ -314,13 +275,8 @@ export function OnlineBoard() {
                     hand={myHand}
                     playable={playable}
                     selectedTile={selectedTile}
-                    rotations={rotations}
                     isHumanTurn={isMyTurn}
                     onSelect={onTileSelect}
-                    onRotate={() => {
-                        if (selectedTile !== null) rotateBy(selectedTile, 90);
-                    }}
-                    onWheelRotate={onWheelRotate}
                 />
             </div>
         </DndContext>

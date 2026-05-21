@@ -24,6 +24,7 @@ import type {
     PlayerId,
     PlayerSeat,
     Rng,
+    RoundOutcome,
     Tile,
 } from "../../web/src/engine/types.js";
 
@@ -496,11 +497,69 @@ export const startNextRound = mutation({
     },
 });
 
+// On match_end: write lifetime stats for every human seat and clear their activeGameId.
+async function recordMatchStats(
+    ctx: {
+        db: {
+            query: Function;
+            get: Function;
+            insert: Function;
+            patch: Function;
+        };
+    },
+    gameId: Id<"games">,
+    outcome: RoundOutcome,
+): Promise<void> {
+    const seats = await ctx.db
+        .query("seats")
+        .withIndex("by_game", (q: { eq: Function }) => q.eq("gameId", gameId))
+        .collect();
+
+    for (const seat of seats as {
+        userId?: Id<"users">;
+        isAI: boolean;
+        team: "A" | "B";
+    }[]) {
+        if (seat.isAI || seat.userId === undefined) continue;
+        const isWin = seat.team === outcome.winningTeam;
+
+        const existing = await ctx.db
+            .query("userStats")
+            .withIndex("by_user", (q: { eq: Function }) => q.eq("userId", seat.userId))
+            .unique();
+
+        if (existing === null) {
+            await ctx.db.insert("userStats", {
+                userId: seat.userId,
+                wins: isWin ? 1 : 0,
+                losses: isWin ? 0 : 1,
+                gamesPlayed: 1,
+                totalPoints: 0,
+                capicuaWins: isWin && outcome.kind === "capicua" ? 1 : 0,
+                chuchazoWins: isWin && outcome.kind === "chuchazo" ? 1 : 0,
+                stealCount: 0,
+            });
+        } else {
+            await ctx.db.patch(existing._id, {
+                wins: existing.wins + (isWin ? 1 : 0),
+                losses: existing.losses + (isWin ? 0 : 1),
+                gamesPlayed: existing.gamesPlayed + 1,
+                capicuaWins: existing.capicuaWins + (isWin && outcome.kind === "capicua" ? 1 : 0),
+                chuchazoWins:
+                    existing.chuchazoWins + (isWin && outcome.kind === "chuchazo" ? 1 : 0),
+            });
+        }
+
+        // One game at a time — release the slot.
+        await ctx.db.patch(seat.userId, { activeGameId: undefined });
+    }
+}
+
 // Internal helper: after a move resolves, check round-end + match-end transitions and either
 // schedule the next AI turn or do nothing (waiting on a human).
 async function finalizeAfterMove(
     ctx: {
-        db: { patch: Function; query: Function };
+        db: { patch: Function; query: Function; get: Function; insert: Function };
         scheduler: { runAfter: Function };
     },
     gameId: Id<"games">,
@@ -517,6 +576,9 @@ async function finalizeAfterMove(
                 lastOutcome: outcome,
                 updatedAt: Date.now(),
             });
+            if (matchOver) {
+                await recordMatchStats(ctx, gameId, outcome);
+            }
         }
         return;
     }

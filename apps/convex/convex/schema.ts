@@ -12,8 +12,15 @@ export default defineSchema({
         // Avatar is one of the preset ID strings from apps/web/src/ui/avatars.ts (e.g. "coqui").
         // Optional for backwards compat with rows created before this field existed.
         avatar: v.optional(v.string()),
+        // Short human-readable code for adding friends, generated once at account creation.
+        friendCode: v.optional(v.string()),
+        // The single game this user is currently seated in (lobby → match_end). Cleared on
+        // match_end so only truly active games count. One game at a time enforced on join.
+        activeGameId: v.optional(v.id("games")),
         createdAt: v.number(),
-    }).index("by_deviceId", ["deviceId"]),
+    })
+        .index("by_deviceId", ["deviceId"])
+        .index("by_friendCode", ["friendCode"]),
 
     games: defineTable({
         roomCode: v.string(), // 6-char from the unambiguous alphabet
@@ -97,4 +104,48 @@ export default defineSchema({
         rngDraw: v.number(),
         createdAt: v.number(),
     }).index("by_game", ["gameId"]),
+
+    // Directed friendship graph. A pair (A→B) with status "pending" means A sent B a request.
+    // Once accepted, both directions are treated as friends — query by_requester + by_addressee.
+    friendships: defineTable({
+        requesterId: v.id("users"),
+        addresseeId: v.id("users"),
+        status: v.union(v.literal("pending"), v.literal("accepted")),
+        createdAt: v.number(),
+    })
+        .index("by_requester", ["requesterId"])
+        .index("by_addressee", ["addresseeId"])
+        .index("by_pair", ["requesterId", "addresseeId"]),
+
+    // In-lobby invites. The toUser sees a notification; accepting navigates to join-game.
+    // Stale invites (game left lobby) are filtered client-side.
+    gameInvites: defineTable({
+        gameId: v.id("games"),
+        fromUserId: v.id("users"),
+        toUserId: v.id("users"),
+        status: v.union(
+            v.literal("pending"),
+            v.literal("accepted"),
+            v.literal("declined"),
+            v.literal("expired"),
+        ),
+        createdAt: v.number(),
+    })
+        .index("by_game", ["gameId"])
+        .index("by_to_user", ["toUserId", "status"])
+        .index("by_from_user", ["fromUserId"]),
+
+    // Per-user lifetime match statistics. Upserted at match_end by recordMatchStats.
+    userStats: defineTable({
+        userId: v.id("users"),
+        wins: v.number(),
+        losses: v.number(),
+        gamesPlayed: v.number(),
+        totalPoints: v.number(),
+        capicuaWins: v.number(),
+        chuchazoWins: v.number(),
+        stealCount: v.number(),
+    })
+        .index("by_user", ["userId"])
+        .index("by_wins", ["wins"]),
 });

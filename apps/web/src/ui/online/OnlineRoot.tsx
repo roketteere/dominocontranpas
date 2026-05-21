@@ -12,6 +12,8 @@ import { SeatPicker } from "./SeatPicker.js";
 import { OnlineBoard } from "./OnlineBoard.js";
 import { OnlineRoundEnd } from "./OnlineRoundEnd.js";
 import { OnlineMatchEnd } from "./OnlineMatchEnd.js";
+import { FriendsList } from "./FriendsList.js";
+import { Leaderboard } from "./Leaderboard.js";
 
 // Routes between the online-mode screens. Resolves a deep-link `?join=ABCD23` query param at
 // mount time so a shared link drops the user straight into JoinGame with the code pre-filled.
@@ -61,5 +63,9 @@ export function OnlineRoot() {
             return <OnlineRoundEnd />;
         case "match_end":
             return <OnlineMatchEnd />;
+        case "friends":
+            return <FriendsList />;
+        case "leaderboard":
+            return <Leaderboard />;
     }
 }
