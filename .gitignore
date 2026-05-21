@@ -56,6 +56,13 @@ ios/build/
 # Misc
 .claude/settings.local.json
 
+# Qwen dispatch scratch (briefs + raw output, single-use)
+/BUG-*-brief.md
+/*.ts.out
+/*.tsx.out
+/.qwen-raw.json
+/.qwen-dispatch.ps1
+
 # Playwright debug artifacts (local-only screenshots from playwright-cli skill)
 .playwright-cli/
 /*.png

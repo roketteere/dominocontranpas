@@ -65,6 +65,15 @@ it says so explicitly.
       `@convex/_generated/api.js`. Never construct strings.
 - [ ] Mutations from `useMutation` are called with a single object
       arg: `void sendInvite({ gameId, fromUserId, toUserId })`.
+- [ ] `console.*` in Convex handlers IS supported at runtime (output
+      lands in the Convex dashboard logs), but the convex tsconfig has
+      `lib: ["ES2022"]` only — no DOM, no Node — so `console` is not in
+      scope at compile time. The ambient lives at
+      `apps/convex/convex/globals.d.ts`. If you reference `console` in a
+      new convex handler and tsc complains, the ambient is missing or
+      excluded — fix the ambient, do NOT widen the tsconfig lib to
+      `DOM`. Reason: BUG-001 dispatch tripped this; the brief asserted
+      "console is a global" without checking the lib.
 
 ## Project style — Tailwind, bilingual, PR color tokens
 

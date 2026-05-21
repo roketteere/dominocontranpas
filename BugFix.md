@@ -38,7 +38,7 @@ Flip the status in the entry header; never delete entries. Resolutions go in-lin
 
 ---
 
-## BUG-001 — getMyInvites throws Server Error on lobby load `[open]`
+## BUG-001 — getMyInvites throws Server Error on lobby load `[done]`
 
 **Reported by:** Joel (browser console, 2026-05-21)
 **Severity:** crash — blocks OnlineHub render entirely once a user has any pending invite
@@ -95,8 +95,33 @@ optimistic_updates_impl.js:151 Uncaught Error:
 **Assigned to:** qwen (investigation + code fix); Joel (deploy step
 if root cause is deployment drift).
 
-**Resolution:** _(qwen fills this on `[done]`; include commit SHA(s),
-file:line refs for the fix, and any cleanup queries run)._
+**Resolution (qwen + Opus, 2026-05-21):**
+
+- **Code fix:** `apps/convex/convex/invites.ts:50` — `getMyInvites` now
+  wraps the per-row hydration body in an inner `try/catch` that
+  `console.warn`s the offending `inviteId` and `continue`s; the whole
+  handler body is also wrapped in an outer `try/catch` that
+  `console.error`s and returns `[]` on catastrophic failure. Happy-path
+  return shape is unchanged. `sendInvite` and `dismissInvite` untouched.
+- **Type-system follow-on:** Convex tsconfig has `lib: ["ES2022"]` only,
+  so `console` is not in scope at compile time even though it's
+  available at runtime. Added
+  `apps/convex/convex/globals.d.ts` with an ambient `declare const
+  console` (warn/error/log). Scoped to the convex workspace only —
+  doesn't pull in `DOM`.
+- **Typecheck:** `pnpm --filter web exec tsc --noEmit` ✅,
+  `pnpm --filter convex exec tsc --noEmit` ✅.
+- **Deploy step (Joel):** still needs `pnpm --filter convex dev` against
+  the live deployment for the index/table to be present remotely if
+  Phase A schema hasn't been pushed yet. Code change alone won't fix
+  the error if the table is genuinely missing in prod.
+- **Dispatch artifact:** qwen brief at `BUG-001-brief.md` (gitignored),
+  raw output at `invites.ts.out` (gitignored). Dispatch took ~25.6s,
+  696 eval_count, output passed self-check on first emit.
+- **Lesson captured in Expectations.md:** added a Convex bullet noting
+  that `console.*` requires the ambient at
+  `apps/convex/convex/globals.d.ts` (or future qwen will trip the same
+  TS error).
 
 ---
 

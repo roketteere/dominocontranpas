@@ -50,29 +50,38 @@ export const dismissInvite = mutation({
 export const getMyInvites = query({
     args: { userId: v.id("users") },
     handler: async (ctx, args) => {
-        const rows = await ctx.db
-            .query("gameInvites")
-            .withIndex("by_to_user", (q) =>
-                q.eq("toUserId", args.userId).eq("status", "pending"),
-            )
-            .collect();
+        try {
+            const rows = await ctx.db
+                .query("gameInvites")
+                .withIndex("by_to_user", (q) =>
+                    q.eq("toUserId", args.userId).eq("status", "pending"),
+                )
+                .collect();
 
-        const out = [];
-        for (const inv of rows) {
-            const game = await ctx.db.get(inv.gameId);
-            if (game === null || game.phase !== "lobby") continue;
-            const from = await ctx.db.get(inv.fromUserId);
-            if (from === null) continue;
-            out.push({
-                inviteId: inv._id,
-                gameId: inv.gameId,
-                roomCode: game.roomCode,
-                mode: game.mode,
-                fromDisplayName: from.displayName,
-                fromAvatar: from.avatar,
-                createdAt: inv.createdAt,
-            });
+            const out = [];
+            for (const inv of rows) {
+                try {
+                    const game = await ctx.db.get(inv.gameId);
+                    if (game === null || game.phase !== "lobby") continue;
+                    const from = await ctx.db.get(inv.fromUserId);
+                    if (from === null) continue;
+                    out.push({
+                        inviteId: inv._id,
+                        gameId: inv.gameId,
+                        roomCode: game.roomCode,
+                        mode: game.mode,
+                        fromDisplayName: from.displayName,
+                        fromAvatar: from.avatar,
+                        createdAt: inv.createdAt,
+                    });
+                } catch (err) {
+                    console.warn("getMyInvites: skipping malformed invite", inv._id, err);
+                }
+            }
+            return out;
+        } catch (err) {
+            console.error("getMyInvites: catastrophic failure", err);
+            return [];
         }
-        return out;
     },
 });
