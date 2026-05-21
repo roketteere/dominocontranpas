@@ -8,6 +8,23 @@ Don't delete old entries; flip the status above.
 
 ## 2026-05-20 — Project genesis
 
+### `[shipped]` Phase 2 closed (2026-05-20)
+Joel playtested end-to-end on the live dev server; nothing else to fix
+at this pass. Final iterations in this batch:
+- True 90° CSS rotation (was 180° pip-swap; commits `66a637b`,
+  `909fe23`). Scroll wheel + R + Shift+R + button all wired.
+- Table layout: opponents at top/left/right per CCW PR convention
+  (seat 1 left, seat 2 top, seat 3 right). Commits `e839450`,
+  `1f65d5b`.
+- Wooden domino-rack visual for the human's hand (gradient + inset
+  shadow + groove stripe). `e839450`.
+- Larger chain tiles + flex-wrap when out of room. `e839450`.
+- Green halo for playable tiles, red dim for unplayable, all-red on
+  a forced pass. `e839450`.
+- Bilingual ES (PR) / EN (US) with persisted language toggle.
+
+Closing this entry; the items below remain as Phase 3 / 3.5 follow-ups.
+
 ### `[shipped]` Phase 2 polish: tile rotation, visual matching, bilingual UI
 Three iterations on top of Phase 2 in response to Joel's playtest feedback
 (2026-05-20):

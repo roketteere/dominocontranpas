@@ -58,16 +58,19 @@ pnpm --filter web preview          # serve the built bundle
 
 ## Status
 
-Pre-alpha. **Phase 1 + 2 done.**
+Pre-alpha. **Phase 1 + 2 closed** (Joel playtested end-to-end).
 
 - **Phase 1 (engine):** pure rule engine in `apps/web/src/engine/`.
   58/58 Vitest tests, ~99% statement / ~92% branch coverage.
 - **Phase 2 (solo-vs-AI UI):** React 19 + Vite 8 + Tailwind 4. Drag-
   and-drop tile play via dnd-kit, heuristic AI for 3 opponents,
   Zustand store orchestrating the move → steal → round-end loop.
-  Smoke-tested with Playwright end-to-end.
+  Bilingual ES (PR) + EN (US), wooden hand rack, table layout with
+  opponents at top/left/right (CCW PR turn order), 90° tile rotation
+  (R / Shift+R / scroll wheel / button), green/red playable tint.
 
-Next up: Phase 3 — Convex backend + online multiplayer.
+Next up: Phase 3 — Convex backend + online multiplayer. Full plan in
+`plans/phase3.md`.
 
 See `IDEAS.md` for what's planned and what's parked. See the project's
 plan at
