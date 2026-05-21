@@ -59,8 +59,9 @@ pnpm --filter convex dev
 
 ## Status
 
-Pre-alpha. **Phases 1 + 2 closed; Phase 3 scaffolded; production deploy
-documented in [DEPLOY.md](./DEPLOY.md).**
+Pre-alpha. **Phases 1 + 2 closed; Phase 3 scaffolded; Convex Cloud +
+Netlify deploy wired (`netlify.toml` in repo). Runbook:
+[DEPLOY.md](./DEPLOY.md).**
 
 - **Phase 1 (engine):** pure rule engine in `apps/web/src/engine/`.
   58/58 Vitest tests, ~99% statement / ~92% branch coverage.

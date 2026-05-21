@@ -3,12 +3,37 @@
 Two pieces ship separately:
 
 - **Backend → Convex Cloud** (managed, free tier covers low DAU)
-- **Frontend → Spaceship subdomain** (static files)
+- **Frontend → Netlify** (GitHub-connected auto-deploy on push)
 
-DNS lives on Spaceship; the Convex cloud URL is just an env var the
-web bundle bakes in at build time.
+Convex prod URL: **https://frugal-goldfish-605.convex.cloud**
+(baked into `netlify.toml` so every build picks it up automatically)
+
+## Quick path: Netlify (recommended)
+
+1. Sign in to <https://app.netlify.com> with your GitHub account.
+2. Click **Add new site → Import an existing project**.
+3. Pick `roketteere/dominocontranpas`.
+4. Netlify detects `netlify.toml` and pre-fills:
+   - Base directory: repo root
+   - Build command: `pnpm install --frozen-lockfile && pnpm --filter web build`
+   - Publish directory: `apps/web/dist`
+   - Env var: `VITE_CONVEX_URL=https://frugal-goldfish-605.convex.cloud`
+5. Click **Deploy site**.
+
+That's it. Every `git push origin main` triggers a fresh build and
+auto-deploys. The Convex URL is hardcoded in `netlify.toml`'s
+`[build.environment]` so you never have to set it manually.
+
+To use a custom subdomain, in Netlify's site settings → Domain
+management, add `tranpas.yourdomain.com` (or whatever) and follow
+the DNS instructions.
 
 ---
+
+## Alternate path: manual / Spaceship static hosting
+
+If you'd rather host the static files yourself (e.g. on a Spaceship
+subdomain), follow the original runbook below.
 
 ## One-time setup
 
