@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 // @ts-ignore — stub overwritten by `convex dev`
 import { api } from "@convex/_generated/api.js";
 import { useIdentityStore } from "../state/identityStore.js";
@@ -17,11 +17,50 @@ export function ProfileEditor({ onClose }: { onClose: () => void }) {
     const setDisplayName = useIdentityStore((s) => s.setDisplayName);
     const setAvatar = useIdentityStore((s) => s.setAvatar);
     const createOrGetUser = useMutation(api.users.createOrGetUser);
+    const claimByRecoveryCode = useMutation(api.users.claimByRecoveryCode);
+    const me = useQuery(api.users.getUserByDeviceId, { deviceId });
+    const myRecoveryCode = useQuery(
+        api.users.getMyRecoveryCode,
+        me?._id ? { userId: me._id } : "skip",
+    );
 
     const [name, setName] = useState(currentName);
     const [pickedAvatar, setPickedAvatar] = useState<AvatarId>(currentAvatar);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [claimInput, setClaimInput] = useState("");
+    const [claimStatus, setClaimStatus] = useState<"idle" | "claiming" | "ok" | "bad">("idle");
+    const [copied, setCopied] = useState(false);
+
+    const onCopy = async () => {
+        if (myRecoveryCode === undefined || myRecoveryCode === null) return;
+        try {
+            await navigator.clipboard.writeText(myRecoveryCode);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1200);
+        } catch {
+            // best-effort
+        }
+    };
+
+    const onClaim = async () => {
+        const code = claimInput.trim().toUpperCase();
+        if (code.length !== 8) return;
+        setClaimStatus("claiming");
+        try {
+            const claimedId = await claimByRecoveryCode({ recoveryCode: code, deviceId });
+            if (claimedId === null) {
+                setClaimStatus("bad");
+                return;
+            }
+            setClaimStatus("ok");
+            // The subscription will refetch with the new identity; close shortly so user sees
+            // the updated chip on next render.
+            setTimeout(() => onClose(), 600);
+        } catch {
+            setClaimStatus("bad");
+        }
+    };
 
     const submit = async () => {
         const trimmed = name.trim();
@@ -92,6 +131,74 @@ export function ProfileEditor({ onClose }: { onClose: () => void }) {
                             <span aria-hidden>{a.glyph}</span>
                         </button>
                     ))}
+                </div>
+
+                {/* Recovery code section — shows the user's own code + a claim input. */}
+                <div className="mb-4 space-y-3 rounded-xl border border-pr-coal-soft bg-pr-coal-soft/30 p-3">
+                    <div>
+                        <p className="mb-1 text-[11px] uppercase tracking-wider text-pr-ivory-dim">
+                            {lang === "es" ? "Tu código de recuperación" : "Your recovery code"}
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <code className="flex-1 select-all rounded-lg bg-pr-coal px-3 py-1.5 font-mono text-lg tracking-widest text-pr-coqui">
+                                {myRecoveryCode ?? "········"}
+                            </code>
+                            <button
+                                type="button"
+                                onClick={() => void onCopy()}
+                                disabled={!myRecoveryCode}
+                                className="rounded-lg border border-pr-coal-soft px-3 py-1 text-xs text-pr-ivory-dim hover:text-pr-ivory disabled:opacity-40"
+                            >
+                                {copied
+                                    ? lang === "es" ? "Copiado" : "Copied"
+                                    : lang === "es" ? "Copiar" : "Copy"}
+                            </button>
+                        </div>
+                        <p className="mt-1 text-[10px] text-pr-ivory-dim">
+                            {lang === "es"
+                                ? "Guárdalo. Te deja recuperar tu cuenta en otro dispositivo."
+                                : "Save it. Lets you recover this account on another device."}
+                        </p>
+                    </div>
+
+                    <div>
+                        <p className="mb-1 text-[11px] uppercase tracking-wider text-pr-ivory-dim">
+                            {lang === "es" ? "¿Tienes otro código?" : "Use someone else's code"}
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="text"
+                                value={claimInput}
+                                onChange={(e) => setClaimInput(e.target.value.toUpperCase())}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") void onClaim();
+                                }}
+                                maxLength={8}
+                                placeholder="XXXXXXXX"
+                                className="flex-1 rounded-lg border border-pr-coal-soft bg-pr-coal-soft/40 px-3 py-1.5 font-mono text-lg tracking-widest text-pr-ivory placeholder:text-pr-ivory-dim/40 focus:border-pr-coqui focus:outline-none"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => void onClaim()}
+                                disabled={claimInput.trim().length !== 8 || claimStatus === "claiming"}
+                                className="rounded-lg bg-pr-coqui px-3 py-1.5 text-xs font-bold text-pr-coal disabled:bg-pr-coal-soft disabled:text-pr-ivory-dim"
+                            >
+                                {claimStatus === "claiming"
+                                    ? "..."
+                                    : lang === "es" ? "Reclamar" : "Claim"}
+                            </button>
+                        </div>
+                        {claimStatus === "bad" && (
+                            <p className="mt-1 text-[11px] text-pr-red">
+                                {lang === "es" ? "Código inválido" : "Invalid code"}
+                            </p>
+                        )}
+                        {claimStatus === "ok" && (
+                            <p className="mt-1 text-[11px] text-pr-coqui">
+                                {lang === "es" ? "¡Reclamado!" : "Claimed!"}
+                            </p>
+                        )}
+                    </div>
                 </div>
 
                 {error !== null && (

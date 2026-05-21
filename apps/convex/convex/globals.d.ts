@@ -5,3 +5,9 @@ declare const console: {
     warn: (...args: unknown[]) => void;
     error: (...args: unknown[]) => void;
 };
+
+// Convex runtime exposes process.env for environment variables set via the
+// Convex dashboard. We only read string values; never write.
+declare const process: {
+    env: Record<string, string | undefined>;
+};

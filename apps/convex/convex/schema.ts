@@ -14,13 +14,21 @@ export default defineSchema({
         avatar: v.optional(v.string()),
         // Short human-readable code for adding friends, generated once at account creation.
         friendCode: v.optional(v.string()),
+        // Separate from friendCode — entering it on a new device re-keys this user row to the
+        // new deviceId, effectively "moving" the account. Backfilled lazily by createOrGetUser.
+        recoveryCode: v.optional(v.string()),
+        // Owner flag. Set once via claimOwnership() with the OWNER_SECRET env var.
+        // Owners can call adminListUsers to see everyone's recovery code (so Joel can help
+        // friends/family who lose theirs). Optional defaults to falsy.
+        isOwner: v.optional(v.boolean()),
         // The single game this user is currently seated in (lobby → match_end). Cleared on
         // match_end so only truly active games count. One game at a time enforced on join.
         activeGameId: v.optional(v.id("games")),
         createdAt: v.number(),
     })
         .index("by_deviceId", ["deviceId"])
-        .index("by_friendCode", ["friendCode"]),
+        .index("by_friendCode", ["friendCode"])
+        .index("by_recoveryCode", ["recoveryCode"]),
 
     games: defineTable({
         roomCode: v.string(), // 6-char from the unambiguous alphabet

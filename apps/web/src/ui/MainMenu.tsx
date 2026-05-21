@@ -1,17 +1,38 @@
+import { useState } from "react";
+import { useQuery } from "convex/react";
+// @ts-ignore — stub overwritten by `convex dev`
+import { api } from "@convex/_generated/api.js";
 import { useGameStore } from "../state/gameStore.js";
+import { useIdentityStore } from "../state/identityStore.js";
 import { useT } from "../i18n/index.js";
 import { ProfileChip } from "./ProfileChip.js";
+import { AdminPanel } from "./AdminPanel.js";
 
 export function MainMenu() {
     const startSoloMatch = useGameStore((s) => s.startSoloMatch);
     const lang = useGameStore((s) => s.lang);
     const t = useT();
     const goOnline = () => useGameStore.setState({ screen: "online" });
+    const deviceId = useIdentityStore((s) => s.deviceId);
+    const me = useQuery(api.users.getUserByDeviceId, { deviceId });
+    const isOwner = me?.isOwner === true;
+    const [adminOpen, setAdminOpen] = useState(false);
     return (
         <div className="relative flex flex-1 flex-col items-center justify-center gap-8 text-center">
-            <div className="absolute right-3 top-3">
+            <div className="absolute right-3 top-3 flex items-center gap-2">
+                {isOwner && (
+                    <button
+                        type="button"
+                        onClick={() => setAdminOpen(true)}
+                        className="rounded-full border border-pr-coqui/60 bg-pr-coqui/10 px-3 py-1 text-sm text-pr-coqui hover:bg-pr-coqui/20"
+                        aria-label={lang === "es" ? "Panel de administrador" : "Admin panel"}
+                    >
+                        🔧
+                    </button>
+                )}
                 <ProfileChip />
             </div>
+            {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} />}
             <header className="space-y-2">
                 <div className="flex items-center justify-center gap-2 text-2xl">
                     <span aria-hidden>🇵🇷</span>
