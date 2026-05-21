@@ -23,6 +23,9 @@ let manifestLoaded = false;
 let context: Context = "gameplay";
 let queue: string[] = [];
 let currentTrack: string | null = null;
+// Last track to actually start playing. Used to prevent an immediate repeat when the queue
+// reshuffles for a new round.
+let lastPlayed: string | null = null;
 
 function getEl(): HTMLAudioElement | null {
     if (typeof window === "undefined") return null;
@@ -58,11 +61,25 @@ function buildQueue(): void {
     } else {
         queue = shuffle(pool);
     }
+    // Avoid an immediate repeat across the round boundary. If the freshly shuffled queue starts
+    // with the song that just finished, swap it with a random later entry. (Only does anything
+    // when the pool has 2+ tracks.)
+    if (queue.length > 1 && lastPlayed !== null && queue[0] === lastPlayed) {
+        const swapWith = 1 + Math.floor(Math.random() * (queue.length - 1));
+        const head = queue[0];
+        const swap = queue[swapWith];
+        if (head !== undefined && swap !== undefined) {
+            queue[0] = swap;
+            queue[swapWith] = head;
+        }
+    }
 }
 
 function nextTrackName(): string | null {
     if (queue.length === 0) buildQueue();
-    return queue.shift() ?? null;
+    const next = queue.shift() ?? null;
+    if (next !== null) lastPlayed = next;
+    return next;
 }
 
 function trackUrl(name: string): string {
