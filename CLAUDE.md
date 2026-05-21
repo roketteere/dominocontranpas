@@ -51,8 +51,9 @@ apps/
 │       ├── ui/        ← React components
 │       ├── net/       ← Convex client hooks
 │       └── pwa/       ← Service worker, manifest
-└── convex/        ← Convex backend (functions + schema)
-    └── _lib/engine/  ← Symlink/import of apps/web/src/engine
+└── convex/        ← Convex backend (functions + schema; Phase 3)
+                     imports the engine via a TS path alias
+                     `@engine/*` → `../web/src/engine/*`
 ```
 
 ## Coding conventions
@@ -84,12 +85,12 @@ apps/
 
 Per Joel's global rules (~/.claude/CLAUDE.md):
 - Commit + push + update README/IDEAS/CLAUDE after every meaningful
-  change. Repo is Joel's, so push is authorized once the remote exists.
+  change. The GitHub remote exists (created 2026-05-20 after Phase 2
+  closed), so routine pushes are authorized.
 - Until kt is back online, skip kanban filing — log forward-looking
   ideas in `IDEAS.md` instead.
-- Do NOT push to GitHub until Joel has explicitly approved creating the
-  remote (the global rule allows local commits + push for repos he
-  owns, but creating the *initial* remote is a one-time gate).
+- Destructive remote operations (force push, branch delete on origin,
+  etc.) still need Joel's explicit OK each time.
 
 ## Cultural correctness
 
