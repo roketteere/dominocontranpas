@@ -1,7 +1,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { Hand as HandT, Tile as TileT } from "../engine/types.js";
-import { Tile } from "./Tile.js";
+import { Tile, type TileGlow } from "./Tile.js";
 import { tileToString } from "../engine/tiles.js";
 import { useGameStore } from "../state/gameStore.js";
 import { equals } from "../engine/tiles.js";
@@ -25,21 +25,17 @@ function DraggableTile({
         data: { tile },
     });
 
-    let glow: string | undefined;
-    if (humanTurn) {
-        glow = canPlay
-            ? "0 0 12px 2px rgba(163,230,53,0.65), 0 0 4px rgba(163,230,53,0.9)"
-            : "0 0 8px 2px rgba(206,17,38,0.5)";
-    }
+    // All glow/depth/desaturate is handled inside the SVG tile via CSS filter:drop-shadow.
+    // The button wrapper only handles layout and drag transforms.
+    const tileGlow: TileGlow = humanTurn ? (canPlay ? "playable" : "unplayable") : "none";
 
     const style: React.CSSProperties = {
         transform: CSS.Translate.toString(transform),
-        opacity: isDragging ? 0.5 : 1,
+        opacity: isDragging ? 0.55 : 1,
         cursor: canPlay ? (isDragging ? "grabbing" : "grab") : humanTurn ? "not-allowed" : "default",
-        filter: humanTurn && !canPlay ? "saturate(0.45) brightness(0.8)" : undefined,
-        borderRadius: "6px",
-        boxShadow: glow,
         touchAction: "none",
+        // Small padding so the drop-shadow on the SVG tile isn't clipped by a parent overflow:hidden
+        padding: "4px",
     };
 
     return (
@@ -52,7 +48,7 @@ function DraggableTile({
             {...attributes}
             {...listeners}
         >
-            <Tile tile={tile} orientation="vertical" size="lg" selected={selected} />
+            <Tile tile={tile} orientation="vertical" size="lg" selected={selected} glow={tileGlow} />
         </button>
     );
 }

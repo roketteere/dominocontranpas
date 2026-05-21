@@ -1,7 +1,5 @@
 import type { Pip, Tile as TileT } from "../engine/types.js";
 
-// [col_frac, row_frac] within the half-tile square.
-// col: 0=left, 0.5=center, 1=right.  row: 0=top, 0.5=middle, 1=bottom.
 const PIP_POS: Record<Pip, ReadonlyArray<readonly [number, number]>> = {
     0: [],
     1: [[0.5, 0.5]],
@@ -12,14 +10,16 @@ const PIP_POS: Record<Pip, ReadonlyArray<readonly [number, number]>> = {
     6: [[0.25, 0.25], [0.25, 0.5], [0.25, 0.75], [0.75, 0.25], [0.75, 0.5], [0.75, 0.75]],
 };
 
-// Half-tile size (px). Vertical tile dimensions: halfPx × (2×halfPx + divider).
 const HALF: Record<"sm" | "md" | "lg", number> = { sm: 22, md: 32, lg: 48 };
 const DIVIDER = 2;
 const CORNER = 5;
-const PAD_FRAC = 0.15; // inner padding as fraction of halfPx
-const R_FRAC = 0.105;  // pip dot radius as fraction of halfPx
+const PAD_FRAC = 0.15;
+const R_FRAC = 0.105;
 
 export type Rotation = 0 | 90 | 180 | 270;
+
+// "playable" = green glow,  "unplayable" = red glow + desaturate,  "none" = depth shadow only
+export type TileGlow = "playable" | "unplayable" | "none";
 
 export type TileProps = {
     tile: TileT;
@@ -28,15 +28,15 @@ export type TileProps = {
     selected?: boolean;
     faceDown?: boolean;
     rotation?: Rotation;
+    glow?: TileGlow;
     className?: string;
 };
 
-// Renders pip dots for one half of the tile as SVG circles.
-// ox/oy is the top-left corner of the half-tile region inside the SVG.
-function Pips({ pip, h, ox, oy }: { pip: Pip; h: number; ox: number; oy: number }) {
+function Pips({ pip, h, ox, oy, dim }: { pip: Pip; h: number; ox: number; oy: number; dim?: boolean }) {
     const pad = h * PAD_FRAC;
     const inner = h - 2 * pad;
     const r = h * R_FRAC;
+    const fill = dim ? "#6b6550" : "#1a1a1a";
     return (
         <>
             {PIP_POS[pip].map(([col, row], i) => (
@@ -45,11 +45,25 @@ function Pips({ pip, h, ox, oy }: { pip: Pip; h: number; ox: number; oy: number 
                     cx={ox + pad + col * inner}
                     cy={oy + pad + row * inner}
                     r={r}
-                    fill="#1a1a1a"
+                    fill={fill}
                 />
             ))}
         </>
     );
+}
+
+// Compute the CSS filter string for the SVG element.
+// All glow and depth is handled here — nothing on the wrapping button.
+function tileFilter(glow: TileGlow, selected: boolean): string {
+    const depth = "drop-shadow(0px 3px 5px rgba(0,0,0,0.55)) drop-shadow(0px 1px 2px rgba(0,0,0,0.4))";
+    if (glow === "playable" || selected) {
+        const ring = "drop-shadow(0 0 6px rgba(163,230,53,0.9)) drop-shadow(0 0 12px rgba(163,230,53,0.45))";
+        return `${ring} ${depth}`;
+    }
+    if (glow === "unplayable") {
+        return `drop-shadow(0 0 5px rgba(206,17,38,0.5)) ${depth} saturate(0.35) brightness(0.75)`;
+    }
+    return depth;
 }
 
 export function Tile({
@@ -59,6 +73,7 @@ export function Tile({
     selected = false,
     faceDown = false,
     rotation = 0,
+    glow = "none",
     className = "",
 }: TileProps) {
     const h = HALF[size];
@@ -66,83 +81,62 @@ export function Tile({
     const isVert = orientation === "vertical";
     const svgW = isVert ? h : h * 2 + d;
     const svgH = isVert ? h * 2 + d : h;
+    const dim = glow === "unplayable";
 
     const style: React.CSSProperties = {
+        display: "block",
+        overflow: "visible",          // let drop-shadow render outside the SVG bounding box
+        filter: tileFilter(glow, selected),
         transform: rotation !== 0 ? `rotate(${rotation}deg)` : undefined,
         transformOrigin: "center",
         transition: "transform 0.2s ease-out",
-        display: "block",
     };
 
     if (faceDown) {
         return (
-            <svg
-                width={svgW}
-                height={svgH}
-                viewBox={`0 0 ${svgW} ${svgH}`}
-                style={style}
-                className={className}
-            >
-                <rect
-                    x={0.75} y={0.75} width={svgW - 1.5} height={svgH - 1.5}
-                    rx={CORNER} ry={CORNER}
-                    fill="#003a99" stroke="#1a1a1a" strokeWidth={1.5}
-                />
-                <rect
-                    x={4} y={4} width={svgW - 8} height={svgH - 8}
-                    rx={CORNER - 2} ry={CORNER - 2}
-                    fill="none" stroke="#0050f0" strokeWidth={1.5}
-                />
+            <svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} style={style} className={className}>
+                <rect x={0.75} y={0.75} width={svgW - 1.5} height={svgH - 1.5}
+                    rx={CORNER} ry={CORNER} fill="#003a99" stroke="#1a1a1a" strokeWidth={2} />
+                <rect x={4} y={4} width={svgW - 8} height={svgH - 8}
+                    rx={CORNER - 2} ry={CORNER - 2} fill="none" stroke="#0050f0" strokeWidth={1.5} />
                 {selected && (
-                    <rect
-                        x={0.75} y={0.75} width={svgW - 1.5} height={svgH - 1.5}
-                        rx={CORNER} ry={CORNER}
-                        fill="none" stroke="#a3e635" strokeWidth={2.5}
-                    />
+                    <rect x={0.75} y={0.75} width={svgW - 1.5} height={svgH - 1.5}
+                        rx={CORNER} ry={CORNER} fill="none" stroke="#a3e635" strokeWidth={2.5} />
                 )}
             </svg>
         );
     }
 
-    const [p0x, p0y, p1x, p1y] = isVert
-        ? [0, 0, 0, h + d]
-        : [0, 0, h + d, 0];
+    const [p0x, p0y, p1x, p1y] = isVert ? [0, 0, 0, h + d] : [0, 0, h + d, 0];
+    // Ivory gradient: lighter at top-left, slightly warmer at bottom-right.
+    const bgFill = dim ? "#d4ccb8" : "#f5ecd9";
+    const borderStroke = dim ? "#4a4a3a" : "#1a1a1a";
 
     return (
-        <svg
-            width={svgW}
-            height={svgH}
-            viewBox={`0 0 ${svgW} ${svgH}`}
-            style={style}
-            className={className}
-        >
-            {/* Tile background */}
-            <rect
-                x={0.75} y={0.75} width={svgW - 1.5} height={svgH - 1.5}
-                rx={CORNER} ry={CORNER}
-                fill="#f5ecd9" stroke="#1a1a1a" strokeWidth={1.5}
-            />
+        <svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} style={style} className={className}>
+            {/* Tile base — slightly inset so the stroke stays fully inside the viewBox */}
+            <rect x={0.75} y={0.75} width={svgW - 1.5} height={svgH - 1.5}
+                rx={CORNER} ry={CORNER} fill={bgFill} stroke={borderStroke} strokeWidth={2} />
 
-            {/* Divider line between the two halves */}
-            {isVert ? (
-                <line x1={4} y1={h + d / 2} x2={svgW - 4} y2={h + d / 2}
-                    stroke="#1a1a1a" strokeWidth={1} />
-            ) : (
-                <line x1={h + d / 2} y1={4} x2={h + d / 2} y2={svgH - 4}
-                    stroke="#1a1a1a" strokeWidth={1} />
+            {/* Subtle highlight along the top edge for a slightly 3-D feel */}
+            {!dim && (
+                <rect x={2} y={2} width={svgW - 4} height={Math.min(h * 0.25, 8)}
+                    rx={CORNER - 1} ry={CORNER - 1}
+                    fill="rgba(255,255,255,0.35)" />
             )}
 
-            {/* Pips — each half is its own coordinate origin */}
-            <Pips pip={tile[0]} h={h} ox={p0x} oy={p0y} />
-            <Pips pip={tile[1]} h={h} ox={p1x} oy={p1y} />
+            {/* Divider */}
+            {isVert
+                ? <line x1={4} y1={h + d / 2} x2={svgW - 4} y2={h + d / 2} stroke={borderStroke} strokeWidth={1.5} />
+                : <line x1={h + d / 2} y1={4} x2={h + d / 2} y2={svgH - 4} stroke={borderStroke} strokeWidth={1.5} />
+            }
 
-            {/* Selection ring */}
+            <Pips pip={tile[0]} h={h} ox={p0x} oy={p0y} dim={dim} />
+            <Pips pip={tile[1]} h={h} ox={p1x} oy={p1y} dim={dim} />
+
             {selected && (
-                <rect
-                    x={0.75} y={0.75} width={svgW - 1.5} height={svgH - 1.5}
-                    rx={CORNER} ry={CORNER}
-                    fill="none" stroke="#a3e635" strokeWidth={2.5}
-                />
+                <rect x={0.75} y={0.75} width={svgW - 1.5} height={svgH - 1.5}
+                    rx={CORNER} ry={CORNER} fill="none" stroke="#a3e635" strokeWidth={3} />
             )}
         </svg>
     );
