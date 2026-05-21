@@ -9,7 +9,7 @@ on their phones.
 ## What this is
 
 Traditional **Dominó Criollo** rules (double-six, 4 players in 2 teams,
-counter-clockwise, capicúa & chuchazo bonuses, lock / tranca scoring)
+counter-clockwise, Capicu & chuchazo bonuses, lock / tranca scoring)
 layered with one new mechanic: **Tranpas** ("tricks" / "cheats" in
 PR slang, from *trampas*) — a forced cross-team tile steal that turns
 the real-world cheating problem (partners signaling via text or

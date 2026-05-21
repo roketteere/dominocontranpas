@@ -57,6 +57,7 @@ export function initialGameState(
         seats,
         hands,
         chain: { tiles: [], leftEnd: null, rightEnd: null },
+        boneyard: [],
         turnIndex: 0,
         turnNumber: 0,
         scores,
@@ -111,6 +112,8 @@ export function dealRound(
         if (seat === undefined) continue;
         newHands[seat.playerId as unknown as string] = [];
     }
+    // Leftover tiles (14 in 2p, 0 in 4p) form the boneyard. Stuck players draw from here.
+    const boneyard: readonly Tile[] = shuffled.slice(cursor);
 
     // Find the opener.
     const newRound = state.round + 1;
@@ -135,6 +138,7 @@ export function dealRound(
         phase: "in_round",
         hands: newHands,
         chain: { tiles: [], leftEnd: null, rightEnd: null },
+        boneyard,
         turnIndex: openerIndex,
         turnNumber: 0,
         round: newRound,

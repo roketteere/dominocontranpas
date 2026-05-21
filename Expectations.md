@@ -92,9 +92,12 @@ it says so explicitly.
 
 ## Cultural correctness
 
-- [ ] Spanish PR domino terms (`capicúa`, `chuchazo`, `tranca`, `paso`,
+- [ ] Spanish PR domino terms (`Capicu`, `chuchazo`, `tranca`, `paso`,
       `zapato`) keep their Spanish forms in the UI even when surrounded
-      by English. Don't translate them away.
+      by English. Don't translate them away. NOTE: the term is `Capicu`
+      (no accent, capital C) in all user-facing copy — engine/schema
+      identifiers stay as `capicua` for backwards-compat. Do NOT use
+      `capicúa` in UI strings.
 - [ ] If a brief asks you to invent UI copy about Puerto Rican culture
       and the brief doesn't quote exact strings: **don't guess**. Flag
       it as `AMBIGUOUS: cultural copy not specified`.

@@ -121,6 +121,10 @@ async function assembleState(
         seats: engineSeats,
         hands,
         chain: game.chain,
+        // BUG-002: boneyard not yet persisted in Convex schema. Stubbed to [] here, which means
+        // online 2p games temporarily behave as old "dead tiles" mode (pass instead of draw).
+        // Schema migration + persistState wiring lands in the follow-up.
+        boneyard: [],
         turnIndex: game.turnIndex,
         turnNumber: game.turnNumber,
         scores: game.scores,

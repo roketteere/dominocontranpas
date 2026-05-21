@@ -65,8 +65,18 @@ export type PassMove = {
     readonly playerId: PlayerId;
 };
 
-// Represents a move, which can be either a play or a pass.
-export type Move = PlayMove | PassMove;
+// Represents a draw from the boneyard. Only legal when the player has no playable tile AND the
+// boneyard is non-empty. The turn does NOT advance on a draw — the player keeps acting until they
+// can play, or the boneyard runs out and they must pass.
+export type DrawMove = {
+    readonly kind: 'draw';
+    readonly playerId: PlayerId;
+    // The tile drawn from the boneyard. Set by applyMove; the caller need not provide it.
+    readonly tile: Tile;
+};
+
+// Represents a move, which can be a play, a pass, or a boneyard draw.
+export type Move = PlayMove | PassMove | DrawMove;
 
 // Represents an event where a tile is stolen from one player to another.
 export type StealEvent = {
@@ -125,6 +135,10 @@ export type GameState = {
     readonly seats: readonly PlayerSeat[];
     readonly hands: Readonly<Record<string, Hand>>;
     readonly chain: Chain;
+    // Server-secret pile of tiles not initially dealt. Empty in 4p-partners (all 28 dealt). Non-
+    // empty in 2p (14 leftover). Stuck players draw from here until they can play, or empty →
+    // pass. NEVER include in any client-readable payload — expose only `.length` as boneyardCount.
+    readonly boneyard: readonly Tile[];
     readonly turnIndex: number;
     readonly turnNumber: number;
     readonly scores: Scores;

@@ -15,6 +15,7 @@ export const engineSmoke = query({
             seats: [],
             hands: {},
             chain: { tiles: [], leftEnd: null, rightEnd: null },
+            boneyard: [],
             turnIndex: 0,
             turnNumber: 0,
             scores: { A: 0, B: 0 } as const,

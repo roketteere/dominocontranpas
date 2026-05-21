@@ -3,7 +3,7 @@ import { query } from "./_generated/server.js";
 
 // PR domino titles, awarded by lifetime match wins.
 export const TITLES = [
-    { minWins: 10000, name: "El Capicúa" },
+    { minWins: 10000, name: "El Capicu" },
     { minWins: 5000, name: "Campeón" },
     { minWins: 2000, name: "El Doble Seis" },
     { minWins: 1000, name: "Cuchillero" },

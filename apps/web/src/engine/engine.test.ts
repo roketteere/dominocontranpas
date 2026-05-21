@@ -70,6 +70,7 @@ function fourPlayerState(overrides: Partial<GameState> = {}): GameState {
         seats,
         hands: { p0: [], p1: [], p2: [], p3: [] },
         chain: emptyChain(),
+        boneyard: [],
         turnIndex: 0,
         turnNumber: 0,
         scores: defaultScores(),
@@ -289,6 +290,31 @@ describe("moves.validMoves", () => {
         expect(moves.length).toBe(1);
         expect(moves[0]!.kind).toBe("pass");
     });
+
+    it("mid-round: returns a single DrawMove when no tiles match AND boneyard non-empty", () => {
+        const chain: Chain = {
+            tiles: [
+                {
+                    tile: makeTile(3, 5),
+                    leftPip: 3,
+                    rightPip: 5,
+                    playedBy: pid("p0"),
+                    turnNumber: 0,
+                },
+            ],
+            leftEnd: 3,
+            rightEnd: 5,
+        };
+        const state = fourPlayerState({
+            chain,
+            turnIndex: 1,
+            hands: { p0: [], p1: [makeTile(0, 1)], p2: [], p3: [] },
+            boneyard: [makeTile(2, 2), makeTile(4, 6)],
+        });
+        const moves = validMoves(state, pid("p1"));
+        expect(moves.length).toBe(1);
+        expect(moves[0]!.kind).toBe("draw");
+    });
 });
 
 describe("moves.applyMove", () => {
@@ -504,6 +530,94 @@ describe("moves.applyMove", () => {
             side: "left",
         };
         expect(() => applyMove(state, bad)).toThrow();
+    });
+
+    it("draw moves a boneyard tile into hand without advancing turn", () => {
+        const chain: Chain = {
+            tiles: [
+                {
+                    tile: makeTile(3, 5),
+                    leftPip: 3,
+                    rightPip: 5,
+                    playedBy: pid("p0"),
+                    turnNumber: 0,
+                },
+            ],
+            leftEnd: 3,
+            rightEnd: 5,
+        };
+        const state = fourPlayerState({
+            chain,
+            turnIndex: 1,
+            turnNumber: 7,
+            hands: { p0: [], p1: [makeTile(0, 1)], p2: [], p3: [] },
+            boneyard: [makeTile(2, 2), makeTile(4, 6)],
+        });
+        // Pull the auto-tile from validMoves so the recorded tile is the engine's pick.
+        const moves = validMoves(state, pid("p1"));
+        expect(moves.length).toBe(1);
+        expect(moves[0]!.kind).toBe("draw");
+        const next = applyMove(state, moves[0]!);
+        expect(next.turnIndex).toBe(1);
+        expect(next.turnNumber).toBe(7);
+        expect(next.boneyard.length).toBe(1);
+        expect(equals(next.boneyard[0]!, makeTile(4, 6))).toBe(true);
+        expect(next.hands["p1"]!.length).toBe(2);
+        expect(containsTile(next.hands["p1"]!, makeTile(2, 2))).toBe(true);
+        expect(next.history.length).toBe(1);
+        expect(next.history[0]!.kind).toBe("draw");
+    });
+
+    it("draw → play sequence: drawn tile becomes playable, then plays normally", () => {
+        const chain: Chain = {
+            tiles: [
+                {
+                    tile: makeTile(3, 5),
+                    leftPip: 3,
+                    rightPip: 5,
+                    playedBy: pid("p0"),
+                    turnNumber: 0,
+                },
+            ],
+            leftEnd: 3,
+            rightEnd: 5,
+        };
+        const state = fourPlayerState({
+            chain,
+            turnIndex: 1,
+            hands: { p0: [], p1: [makeTile(0, 1)], p2: [], p3: [] },
+            // First drawn tile is [3,4], which matches the left end 3.
+            boneyard: [makeTile(3, 4), makeTile(6, 6)],
+        });
+        const afterDraw = applyMove(state, validMoves(state, pid("p1"))[0]!);
+        const moves2 = validMoves(afterDraw, pid("p1"));
+        expect(moves2.every((m) => m.kind === "play")).toBe(true);
+        expect(moves2.length).toBeGreaterThan(0);
+    });
+
+    it("draw is unavailable when boneyard is empty → pass is the only option", () => {
+        const chain: Chain = {
+            tiles: [
+                {
+                    tile: makeTile(3, 5),
+                    leftPip: 3,
+                    rightPip: 5,
+                    playedBy: pid("p0"),
+                    turnNumber: 0,
+                },
+            ],
+            leftEnd: 3,
+            rightEnd: 5,
+        };
+        const state = fourPlayerState({
+            chain,
+            turnIndex: 1,
+            hands: { p0: [], p1: [makeTile(0, 1)], p2: [], p3: [] },
+            boneyard: [],
+        });
+        const moves = validMoves(state, pid("p1"));
+        expect(moves.length).toBe(1);
+        expect(moves[0]!.kind).toBe("pass");
     });
 });
 

@@ -95,7 +95,7 @@ Per Joel's global rules (~/.claude/CLAUDE.md):
 ## Cultural correctness
 
 Joel is Puerto Rican. The product is a love letter to PR domino culture.
-- Spanish rule names (capicúa, chuchazo, tranca, paso, zapato) should
+- Spanish rule names (Capicu, chuchazo, tranca, paso, zapato) should
   appear in the UI, not just English equivalents.
 - Default themes lean into PR iconography: flag colors, El Morro,
   El Yunque, vejigantes, coquí, etc.

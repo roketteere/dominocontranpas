@@ -1,5 +1,6 @@
 import type {
     Chain,
+    DrawMove,
     GameState,
     Hand,
     Move,
@@ -131,6 +132,18 @@ export function validMoves(state: GameState, playerId: PlayerId): Move[] {
     }
 
     if (moves.length === 0) {
+        // No playable tile. Traditional PR rule: draw from the boneyard until one is playable. If
+        // the boneyard is empty, the player must pass.
+        if (state.boneyard.length > 0) {
+            const head = state.boneyard[0];
+            /* c8 ignore next -- length > 0 guarantees head defined; guard satisfies noUncheckedIndexedAccess */
+            if (head === undefined) {
+                const pass: PassMove = { kind: "pass", playerId };
+                return [pass];
+            }
+            const draw: DrawMove = { kind: "draw", playerId, tile: head };
+            return [draw];
+        }
         const pass: PassMove = { kind: "pass", playerId };
         return [pass];
     }
@@ -144,12 +157,42 @@ export function applyMove(state: GameState, move: Move): GameState {
         if (candidate.kind !== move.kind) return false;
         if (candidate.playerId !== move.playerId) return false;
         if (candidate.kind === "pass") return true;
+        if (candidate.kind === "draw") return true;
         // candidate.kind === "play" && move.kind === "play"
         const playMove = move as PlayMove;
         return candidate.side === playMove.side && equals(candidate.tile, playMove.tile);
     });
     if (!isMatch) {
         throw new Error("Illegal move");
+    }
+
+    // Draw does NOT advance the turn — the player keeps acting until they can play (or until the
+    // boneyard is empty and they must pass). turnNumber also unchanged so steal logic still
+    // associates the eventual play/pass with the correct turn.
+    if (move.kind === "draw") {
+        const drawnTile = state.boneyard[0];
+        /* c8 ignore next 3 -- validMoves filters draw out when boneyard is empty */
+        if (drawnTile === undefined) {
+            throw new Error("Cannot draw from empty boneyard");
+        }
+        const hand = getHand(state, move.playerId);
+        /* c8 ignore next 3 -- validMoves filters out players without hands */
+        if (hand === undefined) {
+            throw new Error("Player has no hand: " + String(move.playerId));
+        }
+        const newHand: Hand = [...hand, drawnTile];
+        const newHands: Record<string, Hand> = { ...state.hands };
+        newHands[move.playerId as unknown as string] = newHand;
+        const newBoneyard: readonly Tile[] = state.boneyard.slice(1);
+        // Stamp the actual drawn tile on the recorded history entry (so replay reconstructs the
+        // exact draw the player got).
+        const recorded: DrawMove = { kind: "draw", playerId: move.playerId, tile: drawnTile };
+        return {
+            ...state,
+            hands: newHands,
+            boneyard: newBoneyard,
+            history: [...state.history, recorded],
+        };
     }
 
     const nextTurnIndex = (state.turnIndex + 1) % state.seats.length;

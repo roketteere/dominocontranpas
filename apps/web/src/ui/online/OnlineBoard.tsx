@@ -70,6 +70,11 @@ function viewToEngineState(view: {
         seats,
         hands,
         chain: view.chain,
+        // BUG-002: server view does not yet expose the boneyard. The client engine sees an empty
+        // boneyard and falls back to pass-when-stuck. validMoves on the client is advisory only
+        // (server is source of truth), so the worst case is the UI offers `pass` while the server
+        // would already have auto-drawn — fixed once views.ts exposes boneyardCount.
+        boneyard: [],
         turnIndex: view.turnIndex,
         turnNumber: view.turnNumber,
         scores: view.scores,
