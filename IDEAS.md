@@ -29,8 +29,21 @@ Friends, invites, leaderboard, single-game enforcement. All backend + UI shipped
 **Still pending (Phase B/C):**
 - Live timers (Phase B): `options.turnTimeLimit` + Convex scheduled auto-pass
 - Push notifications (Phase C): web push / VAPID, hardest piece
-- Invite panel in SeatPicker (convenience; friends can still join by room code)
-- InvitePanel: send invites from inside the lobby so friends don't need the room code manually
+
+### `[shipped]` In-lobby InvitePanel (2026-05-21, commit 2ba12ab)
+
+SeatPicker now lists the host's friends with a tap-to-invite button so
+friends can join without the host pasting the room code manually. Each
+friend row shows online/in-game status; the button disables and flips
+to "Invited" after dispatch. Bilingual.
+
+Dispatched via qwen2.5-coder:7b (HTTP API, JSON-escaped brief) per the
+ollama-90-95 workflow. Two surgical Opus fixes after qwen's output:
+hoisted three hooks above the early-return guard (Rules of Hooks); and
+dropped qwen's inline type annotation on `friends.map` (clashed with
+`exactOptionalPropertyTypes` + branded `Id<>` types).
+
+Plan file: `~/.claude/plans/can-you-write-the-magical-haven.md`.
 
 ---
 
