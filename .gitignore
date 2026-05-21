@@ -55,3 +55,7 @@ ios/build/
 
 # Misc
 .claude/settings.local.json
+
+# Playwright debug artifacts (local-only screenshots from playwright-cli skill)
+.playwright-cli/
+/*.png

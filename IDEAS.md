@@ -8,6 +8,32 @@ Don't delete old entries; flip the status above.
 
 ## 2026-05-20 — Project genesis
 
+### `[shipped]` Phase A social features (2026-05-21, commit 117aa8d)
+
+Friends, invites, leaderboard, single-game enforcement. All backend + UI shipped:
+
+**Schema:** `friendCode` + `activeGameId` on users; new `friendships`, `gameInvites`, `userStats` tables.
+
+**Backend:**
+- `friends.ts`: sendFriendRequest (by 8-char code), accept/decline/remove, getFriends, getPendingRequests
+- `invites.ts`: sendInvite, dismissInvite, getMyInvites (filters stale games silently)
+- `stats.ts`: getMyStats, getLeaderboard (world top-50), getFriendsLeaderboard; PR titles Novato → El Capicúa
+- `lobbies.ts`: set activeGameId on create/join; clear on leave; one-active-game enforced
+- `games.ts`: on match_end, upsert userStats (wins/losses/capicua/chuchazo); clear activeGameId
+
+**UI:**
+- OnlineHub (rewrite of LobbyHub): friend code display, resume-game card, invite cards, Friends + Leaderboard nav
+- FriendsList: add-by-code, friends tab (in-game status), requests tab (accept/decline)
+- Leaderboard: world/friends tabs, rank/title/win-rate, El Tranpista badge for stealers
+
+**Still pending (Phase B/C):**
+- Live timers (Phase B): `options.turnTimeLimit` + Convex scheduled auto-pass
+- Push notifications (Phase C): web push / VAPID, hardest piece
+- Invite panel in SeatPicker (convenience; friends can still join by room code)
+- InvitePanel: send invites from inside the lobby so friends don't need the room code manually
+
+---
+
 ### `[in-progress]` Phase 3 scaffolded (2026-05-20)
 All Convex backend code + web online integration shipped. Awaiting
 one-time `pnpm --filter convex dev` to provision the deployment;
