@@ -10,9 +10,10 @@ build/
 .turbo/
 out/
 
-# Convex generated
+# Convex deployment cache (large, machine-specific)
 .convex/
-**/_generated/
+# NOTE: apps/convex/_generated/ is COMMITTED (small, stable, needed for web bundle resolution).
+# `pnpm --filter convex dev` overwrites the stubs with typed versions on first run.
 
 # Env / secrets
 .env
