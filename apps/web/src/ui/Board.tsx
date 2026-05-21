@@ -166,40 +166,52 @@ export function Board() {
     const canLeft = selectedTile !== null ? sidesForSelected.includes("left") : anyPlay && canDropLeft;
     const canRight = selectedTile !== null ? sidesForSelected.includes("right") : anyPlay && canDropRight;
 
+    // Map seat positions to visual table positions. Turn order is counter-clockwise (PR
+    // convention) with seat 0 = south (me). So seat 1 is west (visual left), seat 2 is north
+    // (across / my partner), seat 3 is east (visual right).
+    const seatByPosition = (pos: number) => state.seats.find((s) => s.position === pos);
+    const leftSeat = seatByPosition(1);
+    const topSeat = seatByPosition(2);
+    const rightSeat = seatByPosition(3);
+    const renderOpponent = (
+        seat: typeof state.seats[number] | undefined,
+        placement: "top" | "left" | "right",
+    ) => {
+        if (seat === undefined) return null;
+        const hand = state.hands[seat.playerId as unknown as string] ?? [];
+        const isCurrent = state.seats[state.turnIndex]?.playerId === seat.playerId;
+        return (
+            <OpponentRow
+                seat={seat}
+                handCount={hand.length}
+                isCurrentTurn={isCurrent}
+                isAiThinking={isCurrent && aiThinking}
+                placement={placement}
+            />
+        );
+    };
+
     return (
         <DndContext sensors={sensors} onDragEnd={onDragEnd}>
             <div className="flex flex-1 flex-col gap-3">
                 <ScoreBar state={state} />
 
-                {/* Opponents grid */}
-                <div className="grid gap-2">
-                    {state.seats
-                        .filter((s) => s.playerId !== humanPlayerId)
-                        .map((seat, idx) => {
-                            const hand = state.hands[seat.playerId as unknown as string] ?? [];
-                            const isCurrent =
-                                state.seats[state.turnIndex]?.playerId === seat.playerId;
-                            return (
-                                <OpponentRow
-                                    key={`${seat.position}-${idx}`}
-                                    seat={seat}
-                                    handCount={hand.length}
-                                    isCurrentTurn={isCurrent}
-                                    isAiThinking={isCurrent && aiThinking}
-                                />
-                            );
-                        })}
-                </div>
+                {/* Partner across the table */}
+                <div>{renderOpponent(topSeat, "top")}</div>
 
-                {/* Chain */}
-                <div className="my-2 flex-1">
-                    <Chain
-                        chain={state.chain}
-                        canDropLeft={isHumanTurn && canLeft}
-                        canDropRight={isHumanTurn && canRight}
-                        onTapLeft={() => playOnSide("left")}
-                        onTapRight={() => playOnSide("right")}
-                    />
+                {/* Left opponent | Chain (center) | Right opponent */}
+                <div className="my-1 grid flex-1 grid-cols-[auto_1fr_auto] items-stretch gap-2">
+                    <div>{renderOpponent(leftSeat, "left")}</div>
+                    <div className="min-w-0">
+                        <Chain
+                            chain={state.chain}
+                            canDropLeft={isHumanTurn && canLeft}
+                            canDropRight={isHumanTurn && canRight}
+                            onTapLeft={() => playOnSide("left")}
+                            onTapRight={() => playOnSide("right")}
+                        />
+                    </div>
+                    <div>{renderOpponent(rightSeat, "right")}</div>
                 </div>
 
                 {/* Turn banner */}
@@ -234,6 +246,7 @@ export function Board() {
                     playable={playableTiles}
                     selectedTile={selectedTile}
                     rotations={rotations}
+                    isHumanTurn={isHumanTurn}
                     onSelect={onTileSelect}
                     onRotate={onRotateSelected}
                     onWheelRotate={onWheelRotate}

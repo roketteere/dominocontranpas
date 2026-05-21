@@ -18,7 +18,7 @@ function PlacedTileView({ placed }: { placed: PlacedTile }) {
     // visual left (placed.leftPip === tile[1]), we rotate 180° so the matching pip touches the
     // neighboring tile's matching pip.
     const rotation = placed.tile[0] === placed.leftPip ? 0 : 180;
-    return <Tile tile={placed.tile} orientation={orientation} size="sm" rotation={rotation} />;
+    return <Tile tile={placed.tile} orientation={orientation} size="md" rotation={rotation} />;
 }
 
 function DropZone({
@@ -55,7 +55,7 @@ function DropZone({
 export function Chain({ chain, canDropLeft, canDropRight, onTapLeft, onTapRight }: ChainProps) {
     if (chain.tiles.length === 0) {
         return (
-            <div className="flex items-center justify-center gap-1 rounded-xl bg-pr-table-dark/40 p-3">
+            <div className="flex h-full min-h-32 items-center justify-center rounded-xl bg-pr-table-dark/40 p-4">
                 <DropZone
                     id="drop-left"
                     active={canDropLeft || canDropRight}
@@ -66,12 +66,17 @@ export function Chain({ chain, canDropLeft, canDropRight, onTapLeft, onTapRight 
         );
     }
     return (
-        <div className="flex flex-wrap items-center justify-center gap-1 rounded-xl bg-pr-table-dark/40 p-3">
-            <DropZone id="drop-left" active={canDropLeft} label="←" onTap={onTapLeft} />
-            {chain.tiles.map((p, i) => (
-                <PlacedTileView key={`${i}-${p.tile[0]}-${p.tile[1]}-${p.turnNumber}`} placed={p} />
-            ))}
-            <DropZone id="drop-right" active={canDropRight} label="→" onTap={onTapRight} />
+        <div className="flex h-full min-h-32 items-center justify-center rounded-xl bg-pr-table-dark/40 p-3">
+            <div className="flex max-w-full flex-wrap items-center justify-center gap-1">
+                <DropZone id="drop-left" active={canDropLeft} label="←" onTap={onTapLeft} />
+                {chain.tiles.map((p, i) => (
+                    <PlacedTileView
+                        key={`${i}-${p.tile[0]}-${p.tile[1]}-${p.turnNumber}`}
+                        placed={p}
+                    />
+                ))}
+                <DropZone id="drop-right" active={canDropRight} label="→" onTap={onTapRight} />
+            </div>
         </div>
     );
 }
