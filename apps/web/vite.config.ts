@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { audioManifestPlugin } from "./vite-plugins/audio-manifest.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -17,7 +18,7 @@ if (envPort !== undefined && envPort !== "") {
 }
 
 export default defineConfig({
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), audioManifestPlugin()],
     server: serverConfig,
     resolve: {
         alias: {

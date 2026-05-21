@@ -8,17 +8,31 @@ import { MatchEnd } from "./ui/MatchEnd.js";
 import { OnlineRoot } from "./ui/online/OnlineRoot.js";
 import { AudioControls } from "./ui/AudioControls.js";
 import { convex, isOnlineConfigured } from "./net/convexClient.js";
-import { setMusicTrack, syncMusicVolume } from "./audio/musicPlayer.js";
+import { initMusic, setMusicContext, syncMusicVolume } from "./audio/musicPlayer.js";
+import { installAudioUnlock } from "./audio/unlock.js";
 
 export function App() {
     const screen = useGameStore((s) => s.screen);
 
-    // Load the background music track once on mount. If the file is missing the audio element
-    // silently skips it. Volume sync happens automatically via the audio store subscription.
+    // Init the music playlist once on mount. Tracks are discovered via /audio/manifest.json
+    // served by the audio-manifest Vite plugin. If the manifest is empty (no files dropped in)
+    // the player silently no-ops. installAudioUnlock arms a one-shot listener that resumes the
+    // AudioContext on the user's first gesture (browser autoplay policy).
     useEffect(() => {
-        setMusicTrack("/audio/reggaeton-loop.mp3");
+        void initMusic();
         syncMusicVolume();
+        installAudioUnlock();
     }, []);
+
+    // Switch the music context based on the current screen: lobby/menu screens use lobby tracks
+    // (if any), gameplay uses gameplay tracks. Falls back to the other set if one is empty.
+    useEffect(() => {
+        if (screen === "menu" || screen === "online") {
+            setMusicContext("lobby");
+        } else {
+            setMusicContext("gameplay");
+        }
+    }, [screen]);
 
     return (
         <ConvexProvider client={convex}>
