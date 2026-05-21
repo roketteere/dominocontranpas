@@ -10,9 +10,13 @@ import { AudioControls } from "./ui/AudioControls.js";
 import { convex, isOnlineConfigured } from "./net/convexClient.js";
 import { initMusic, setMusicContext, syncMusicVolume } from "./audio/musicPlayer.js";
 import { installAudioUnlock } from "./audio/unlock.js";
+import { useAudioStore } from "./audio/audioStore.js";
+import { EnterOverlay } from "./ui/EnterOverlay.js";
 
 export function App() {
     const screen = useGameStore((s) => s.screen);
+    const entered = useAudioStore((s) => s.entered);
+    const markEntered = useAudioStore((s) => s.markEntered);
 
     // Init the music playlist once on mount. Tracks are discovered via /audio/manifest.json
     // served by the audio-manifest Vite plugin. If the manifest is empty (no files dropped in)
@@ -23,6 +27,15 @@ export function App() {
         syncMusicVolume();
         installAudioUnlock();
     }, []);
+
+    const onEnter = () => {
+        markEntered();
+        // The button click itself is the user gesture; installAudioUnlock's listener fires on
+        // this same click. Kick the music explicitly so it starts immediately rather than
+        // waiting for the next render cycle.
+        void initMusic();
+        syncMusicVolume();
+    };
 
     // Switch the music context based on the current screen: lobby/menu screens use lobby tracks
     // (if any), gameplay uses gameplay tracks. Falls back to the other set if one is empty.
@@ -36,6 +49,7 @@ export function App() {
 
     return (
         <ConvexProvider client={convex}>
+            {!entered && <EnterOverlay onEnter={onEnter} />}
             <main className="relative z-10 mx-auto flex h-full max-w-4xl flex-col px-4 py-6">
                 {screen === "menu" && <MainMenu />}
                 {screen === "playing" && <Board />}

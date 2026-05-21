@@ -37,11 +37,15 @@ export type AudioState = {
     muted: boolean;
     musicEnabled: boolean;
     sfxEnabled: boolean;
+    // Has the user clicked the EnterOverlay yet this session? Not persisted — every fresh load
+    // shows the overlay so the click satisfies the browser autoplay policy.
+    entered: boolean;
     setMasterVolume: (v: number) => void;
     setMuted: (m: boolean) => void;
     toggleMuted: () => void;
     setMusicEnabled: (e: boolean) => void;
     setSfxEnabled: (e: boolean) => void;
+    markEntered: () => void;
 };
 
 export const useAudioStore = create<AudioState>((set, get) => ({
@@ -49,6 +53,7 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     muted: loadBool(MUTED_KEY, false),
     musicEnabled: loadBool(MUSIC_KEY, true),
     sfxEnabled: loadBool(SFX_KEY, true),
+    entered: false,
     setMasterVolume: (v) => {
         const clamped = Math.max(0, Math.min(1, v));
         saveString(MASTER_KEY, String(clamped));
@@ -71,6 +76,7 @@ export const useAudioStore = create<AudioState>((set, get) => ({
         saveString(SFX_KEY, String(e));
         set({ sfxEnabled: e });
     },
+    markEntered: () => set({ entered: true }),
 }));
 
 // Helper: the effective volume any audio source should use right now.
