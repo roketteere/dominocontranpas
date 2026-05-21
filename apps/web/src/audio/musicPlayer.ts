@@ -98,10 +98,11 @@ function advance(): void {
     currentTrack = next;
     audio.src = trackUrl(next);
     audio.load();
+    // syncMusicVolume is the single source of truth for play vs pause: it consults the audio
+    // store (muted / masterVolume / musicEnabled) and either plays or pauses accordingly. A
+    // separate unconditional play() here would override its pause decision and music would
+    // sneak in despite mute on refresh.
     syncMusicVolume();
-    void audio.play().catch(() => {
-        // Autoplay may still be blocked until first gesture; the unlock module handles that.
-    });
 }
 
 async function loadManifest(): Promise<void> {

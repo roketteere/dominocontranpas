@@ -10,7 +10,7 @@ const PIP_POS: Record<Pip, ReadonlyArray<readonly [number, number]>> = {
     6: [[0.25, 0.25], [0.25, 0.5], [0.25, 0.75], [0.75, 0.25], [0.75, 0.5], [0.75, 0.75]],
 };
 
-const HALF: Record<"sm" | "md" | "lg", number> = { sm: 22, md: 32, lg: 48 };
+const HALF: Record<"xs" | "sm" | "md" | "lg", number> = { xs: 11, sm: 22, md: 32, lg: 48 };
 const DIVIDER = 2;
 const CORNER = 5;
 const PAD_FRAC = 0.15;
@@ -21,7 +21,7 @@ export type Rotation = 0 | 90 | 180 | 270;
 export type TileProps = {
     tile: TileT;
     orientation?: "horizontal" | "vertical";
-    size?: "sm" | "md" | "lg";
+    size?: "xs" | "sm" | "md" | "lg";
     selected?: boolean;
     faceDown?: boolean;
     rotation?: Rotation;

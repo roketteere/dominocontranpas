@@ -232,6 +232,7 @@ export function Board() {
                             isAiThinking={state.seats[state.turnIndex]?.playerId === s.playerId && aiThinking}
                             placement="row"
                             avatarId={soloOpponentAvatar(s.position)}
+                            showTiles
                         />
                     ))}
                 </div>

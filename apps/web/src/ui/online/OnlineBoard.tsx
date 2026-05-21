@@ -239,6 +239,7 @@ export function OnlineBoard() {
                 isAiThinking={false}
                 placement="row"
                 avatarId={seatAvatar ?? null}
+                showTiles
             />
         );
     };
