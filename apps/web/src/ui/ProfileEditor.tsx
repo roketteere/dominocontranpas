@@ -18,6 +18,7 @@ export function ProfileEditor({ onClose }: { onClose: () => void }) {
     const setAvatar = useIdentityStore((s) => s.setAvatar);
     const createOrGetUser = useMutation(api.users.createOrGetUser);
     const claimByRecoveryCode = useMutation(api.users.claimByRecoveryCode);
+    const claimOwnership = useMutation(api.users.claimOwnership);
     const me = useQuery(api.users.getUserByDeviceId, { deviceId });
     const myRecoveryCode = useQuery(
         api.users.getMyRecoveryCode,
@@ -31,6 +32,11 @@ export function ProfileEditor({ onClose }: { onClose: () => void }) {
     const [claimInput, setClaimInput] = useState("");
     const [claimStatus, setClaimStatus] = useState<"idle" | "claiming" | "ok" | "bad">("idle");
     const [copied, setCopied] = useState(false);
+    // Owner-claim state — type OWNER_SECRET once to flip isOwner on this browser's user row.
+    const [ownerSecret, setOwnerSecret] = useState("");
+    const [ownerStatus, setOwnerStatus] = useState<"idle" | "saving" | "ok" | "bad" | "noSecret">(
+        "idle",
+    );
 
     const onCopy = async () => {
         if (myRecoveryCode === undefined || myRecoveryCode === null) return;
@@ -59,6 +65,24 @@ export function ProfileEditor({ onClose }: { onClose: () => void }) {
             setTimeout(() => onClose(), 600);
         } catch {
             setClaimStatus("bad");
+        }
+    };
+
+    const onClaimAdmin = async () => {
+        const secret = ownerSecret.trim();
+        if (secret.length === 0) return;
+        if (!me?._id) return;
+        setOwnerStatus("saving");
+        try {
+            await claimOwnership({ secret, userId: me._id });
+            setOwnerStatus("ok");
+            // Subscription on getUserByDeviceId will refetch and me.isOwner flips to true; the
+            // ⚙️ menu will show 🔧 next render. Close after a brief confirmation.
+            setTimeout(() => onClose(), 700);
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            if (msg.includes("not configured")) setOwnerStatus("noSecret");
+            else setOwnerStatus("bad");
         }
     };
 
@@ -200,6 +224,74 @@ export function ProfileEditor({ onClose }: { onClose: () => void }) {
                         )}
                     </div>
                 </div>
+
+                {/* Owner-claim section — flips isOwner=true on this browser's user row when
+                    the right OWNER_SECRET is typed. Shows only if we're not already an owner.
+                    The chip in Settings appears automatically on the next Convex tick. */}
+                {me?.isOwner === true ? (
+                    <div className="mb-4 flex items-center gap-2 rounded-xl border border-pr-coqui/60 bg-pr-coqui/10 px-3 py-2">
+                        <span className="text-xl" aria-hidden>👑</span>
+                        <span className="text-xs text-pr-coqui">
+                            {lang === "es"
+                                ? "Este navegador es admin"
+                                : "This browser is an admin"}
+                        </span>
+                    </div>
+                ) : me?._id ? (
+                    <div className="mb-4 space-y-2 rounded-xl border border-pr-coal-soft bg-pr-coal-soft/30 p-3">
+                        <p className="text-[11px] uppercase tracking-wider text-pr-ivory-dim">
+                            {lang === "es"
+                                ? "Convertir este navegador en admin"
+                                : "Make this browser an admin"}
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="password"
+                                value={ownerSecret}
+                                onChange={(e) => setOwnerSecret(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") void onClaimAdmin();
+                                }}
+                                placeholder="OWNER_SECRET"
+                                className="flex-1 rounded-lg border border-pr-coal-soft bg-pr-coal-soft/40 px-3 py-1.5 text-sm text-pr-ivory placeholder:text-pr-ivory-dim/40 focus:border-pr-coqui focus:outline-none"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => void onClaimAdmin()}
+                                disabled={
+                                    ownerSecret.trim().length === 0 || ownerStatus === "saving"
+                                }
+                                className="rounded-lg bg-pr-coqui px-3 py-1.5 text-xs font-bold text-pr-coal disabled:bg-pr-coal-soft disabled:text-pr-ivory-dim"
+                            >
+                                {ownerStatus === "saving"
+                                    ? "..."
+                                    : lang === "es" ? "Ascender" : "Promote"}
+                            </button>
+                        </div>
+                        {ownerStatus === "bad" && (
+                            <p className="text-[11px] text-pr-red">
+                                {lang === "es" ? "Secret inválido" : "Invalid secret"}
+                            </p>
+                        )}
+                        {ownerStatus === "noSecret" && (
+                            <p className="text-[11px] text-pr-red">
+                                {lang === "es"
+                                    ? "OWNER_SECRET no configurado en Convex"
+                                    : "OWNER_SECRET not configured on Convex"}
+                            </p>
+                        )}
+                        {ownerStatus === "ok" && (
+                            <p className="text-[11px] text-pr-coqui">
+                                {lang === "es" ? "¡Listo! Eres admin." : "Done! You're admin."}
+                            </p>
+                        )}
+                        <p className="text-[10px] text-pr-ivory-dim">
+                            {lang === "es"
+                                ? "Tendrás el chip 🔧 en este navegador después de guardar."
+                                : "After saving, you'll see the 🔧 chip on this browser."}
+                        </p>
+                    </div>
+                ) : null}
 
                 {error !== null && (
                     <p className="mb-3 rounded-lg bg-pr-red/30 px-3 py-2 text-xs text-pr-ivory">
